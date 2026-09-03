@@ -1,26 +1,142 @@
 @import "tailwindcss";
 
+/*
+  Palette "Teranga" — indigo profond + laiton.
+  Validée par le client (voir prompts/00-CONTEXTE.md, section 3).
+*/
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f6f3ec;
+  --surface: #ffffff;
+  --surface-raised: #ffffff;
+  --foreground: #1d1b33;
+  --muted: #736f8c;
+  --border: #e6e1d2;
+
+  --sidebar: #221f55;
+  --sidebar-foreground: #ffffff;
+  --sidebar-muted: rgba(255, 255, 255, 0.62);
+  --sidebar-active: rgba(255, 255, 255, 0.14);
+
+  --accent: #2e2a6e;
+  --accent-foreground: #ffffff;
+  --accent-soft: rgba(46, 42, 110, 0.08);
+
+  --brass: #c6913f;
+  --brass-foreground: #1d1b33;
+  --brass-soft: rgba(198, 145, 63, 0.12);
+
+  --success: #1e7a4c;
+  --success-soft: rgba(30, 122, 76, 0.1);
+  --warning: #9a6810;
+  --warning-soft: rgba(154, 104, 16, 0.1);
+  --danger: #a8362a;
+  --danger-soft: rgba(168, 54, 42, 0.1);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --background: #14131f;
+    --surface: #1c1b2b;
+    --surface-raised: #221f36;
+    --foreground: #ece9e2;
+    --muted: #9d99b3;
+    --border: #2c2a3f;
+
+    --sidebar: #1a1840;
+    --sidebar-foreground: #ffffff;
+    --sidebar-muted: rgba(255, 255, 255, 0.6);
+    --sidebar-active: rgba(255, 255, 255, 0.14);
+
+    --accent: #8f89e0;
+    --accent-foreground: #14131f;
+    --accent-soft: rgba(143, 137, 224, 0.15);
+
+    --brass: #d9a75a;
+    --brass-foreground: #14131f;
+    --brass-soft: rgba(217, 167, 90, 0.15);
+
+    --success: #4cc98a;
+    --success-soft: rgba(76, 201, 138, 0.15);
+    --warning: #e3a83c;
+    --warning-soft: rgba(227, 168, 60, 0.15);
+    --danger: #e2695a;
+    --danger-soft: rgba(226, 105, 90, 0.15);
+  }
+}
+
+:root[data-theme="dark"] {
+  --background: #14131f;
+  --surface: #1c1b2b;
+  --surface-raised: #221f36;
+  --foreground: #ece9e2;
+  --muted: #9d99b3;
+  --border: #2c2a3f;
+
+  --sidebar: #1a1840;
+  --sidebar-foreground: #ffffff;
+  --sidebar-muted: rgba(255, 255, 255, 0.6);
+  --sidebar-active: rgba(255, 255, 255, 0.14);
+
+  --accent: #8f89e0;
+  --accent-foreground: #14131f;
+  --accent-soft: rgba(143, 137, 224, 0.15);
+
+  --brass: #d9a75a;
+  --brass-foreground: #14131f;
+  --brass-soft: rgba(217, 167, 90, 0.15);
+
+  --success: #4cc98a;
+  --success-soft: rgba(76, 201, 138, 0.15);
+  --warning: #e3a83c;
+  --warning-soft: rgba(227, 168, 60, 0.15);
+  --danger: #e2695a;
+  --danger-soft: rgba(226, 105, 90, 0.15);
 }
 
 @theme inline {
   --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  --color-muted: var(--muted);
+  --color-border: var(--border);
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-muted: var(--sidebar-muted);
+  --color-sidebar-active: var(--sidebar-active);
+
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent-soft: var(--accent-soft);
+
+  --color-brass: var(--brass);
+  --color-brass-foreground: var(--brass-foreground);
+  --color-brass-soft: var(--brass-soft);
+
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+
+  --font-display: var(--font-unbounded);
+  --font-sans: var(--font-manrope);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans), system-ui, sans-serif;
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
 }
