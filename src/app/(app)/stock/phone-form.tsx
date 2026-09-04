@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatFCFA } from "@/lib/utils";
 import { COMMON_BRANDS, RAM_OPTIONS, STORAGE_OPTIONS } from "@/lib/constants";
 import { SupplierQuickCreateModal } from "../fournisseurs/supplier-quick-create-modal";
+import { PhotoUpload } from "./photo-upload";
 import type { PhoneFormState } from "./actions";
 import type { PhoneMasked } from "@/types";
 
@@ -52,6 +53,7 @@ export function PhoneForm({
   const [color, setColor] = useState(phone?.color ?? "");
   const [email, setEmail] = useState(phone?.email ?? "");
   const [selectedSupplier, setSelectedSupplier] = useState(phone?.supplier_id ?? "");
+  const [photoUrl, setPhotoUrl] = useState(phone?.photo_url ?? "");
   const [arrivalDate, setArrivalDate] = useState(
     phone?.arrival_date ?? new Date().toISOString().slice(0, 10),
   );
@@ -78,6 +80,10 @@ export function PhoneForm({
           <CardTitle>Informations téléphone</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-2">
+          <div className="sm:col-span-2">
+            <PhotoUpload value={photoUrl} onChange={setPhotoUrl} />
+            <input type="hidden" name="photo_url" value={photoUrl} />
+          </div>
           <Input
             label="Marque"
             name="brand"

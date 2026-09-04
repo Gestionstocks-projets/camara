@@ -38,6 +38,13 @@ export const phoneSchema = z.object({
     .optional()
     .or(z.literal(""))
     .transform((value) => (value ? value : null)),
+  photo_url: z
+    .string()
+    .trim()
+    .url()
+    .optional()
+    .or(z.literal(""))
+    .transform((value) => (value ? value : null)),
   arrival_date: z.string().min(1, "La date d'arrivée est obligatoire."),
   purchase_price: z.coerce.number().min(0, "Le prix d'achat doit être positif."),
   extra_fees: z.coerce.number().min(0).default(0),

@@ -114,6 +114,7 @@ export interface Database {
           storage: string;
           color: string | null;
           email: string | null;
+          photo_url: string | null;
           status: PhoneStatus;
           supplier_id: string | null;
           arrival_date: string;
@@ -134,6 +135,7 @@ export interface Database {
           storage: string;
           color?: string | null;
           email?: string | null;
+          photo_url?: string | null;
           status?: PhoneStatus;
           supplier_id?: string | null;
           arrival_date?: string;

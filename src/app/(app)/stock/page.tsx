@@ -98,7 +98,19 @@ export default async function StockPage({ searchParams }: StockPageProps) {
             {phones.map((phone) => (
               <TableRow key={phone.id}>
                 <TableCell className="font-semibold">
-                  <Link href={`/stock/${phone.id}`} className="hover:underline">
+                  <Link href={`/stock/${phone.id}`} className="flex items-center gap-2.5 hover:underline">
+                    {phone.photo_url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={phone.photo_url}
+                        alt=""
+                        className="h-8 w-8 shrink-0 rounded object-cover"
+                      />
+                    ) : (
+                      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded bg-surface-raised">
+                        <Smartphone className="h-4 w-4 text-muted" strokeWidth={1.5} />
+                      </span>
+                    )}
                     {phone.brand} {phone.model}
                   </Link>
                 </TableCell>

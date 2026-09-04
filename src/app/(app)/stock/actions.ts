@@ -16,6 +16,7 @@ export interface PhoneFormValues {
   color?: string;
   email?: string;
   supplier_id?: string;
+  photo_url?: string;
   arrival_date?: string;
 }
 
@@ -38,6 +39,7 @@ function formValues(formData: FormData): PhoneFormValues {
     color: String(formData.get("color") ?? ""),
     email: String(formData.get("email") ?? ""),
     supplier_id: String(formData.get("supplier_id") ?? ""),
+    photo_url: String(formData.get("photo_url") ?? ""),
     arrival_date: String(formData.get("arrival_date") ?? ""),
   };
 }
@@ -53,6 +55,7 @@ function readInput(formData: FormData) {
     color: formData.get("color") || undefined,
     email: formData.get("email") || undefined,
     supplier_id: formData.get("supplier_id") || undefined,
+    photo_url: formData.get("photo_url") || undefined,
     arrival_date: formData.get("arrival_date"),
     purchase_price: formData.get("purchase_price"),
     extra_fees: formData.get("extra_fees") || 0,
@@ -103,6 +106,7 @@ function readUpdateInput(formData: FormData) {
     color: formData.get("color") || undefined,
     email: formData.get("email") || undefined,
     supplier_id: formData.get("supplier_id") || undefined,
+    photo_url: formData.get("photo_url") || undefined,
     arrival_date: formData.get("arrival_date"),
     planned_sale_price: formData.get("planned_sale_price"),
   };

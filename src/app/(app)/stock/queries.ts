@@ -16,7 +16,7 @@ export interface PhoneFilters {
 }
 
 const PHONE_COLUMNS =
-  "id, brand, model, imei, condition, ram, storage, color, email, status, supplier_id, arrival_date, purchase_price, extra_fees, planned_sale_price, created_by, created_at, updated_at";
+  "id, brand, model, imei, condition, ram, storage, color, email, photo_url, status, supplier_id, arrival_date, purchase_price, extra_fees, planned_sale_price, created_by, created_at, updated_at";
 
 function maskPhone(
   phone: PhoneMasked,

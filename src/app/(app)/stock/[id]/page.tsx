@@ -73,6 +73,15 @@ export default async function PhoneDetailPage({
         <Badge tone="neutral">{PHONE_CONDITION_LABELS[phone.condition]}</Badge>
       </div>
 
+      {phone.photo_url ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={phone.photo_url}
+          alt={`${phone.brand} ${phone.model}`}
+          className="mb-4 h-56 w-full rounded-lg border border-border object-cover"
+        />
+      ) : null}
+
       <Card className="mb-4">
         <CardContent className="grid gap-4 p-5 sm:grid-cols-3">
           <Field label="RAM" value={phone.ram ?? "—"} />
