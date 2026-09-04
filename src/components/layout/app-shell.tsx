@@ -3,6 +3,7 @@
 import { useState, type ReactNode } from "react";
 import { Sidebar } from "./sidebar";
 import { Topbar } from "./topbar";
+import { InstallPrompt } from "@/components/pwa/install-prompt";
 import type { Profile } from "@/types";
 
 export function AppShell({
@@ -31,6 +32,7 @@ export function AppShell({
         <Topbar profile={profile} onOpenMobile={() => setMobileOpen(true)} />
         <main className="flex-1 bg-background p-4 sm:p-6">{children}</main>
       </div>
+      <InstallPrompt />
     </div>
   );
 }
