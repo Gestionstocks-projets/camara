@@ -15,6 +15,14 @@ interface SupplierOption {
   name: string;
 }
 
+/**
+ * Tous les champs texte/select sont volontairement contrôlés (useState),
+ * jamais en `defaultValue` seul : après un échec de soumission (IMEI en
+ * double, champ manquant…), React 19 réinitialise les champs non
+ * contrôlés d'un `<form action>` — l'utilisateur perdait sa saisie et
+ * devait tout retaper (retour utilisateur du 2026-09-04). Un champ
+ * contrôlé garde sa valeur quoi qu'il arrive à l'action.
+ */
 export function PhoneForm({
   action,
   phone,
@@ -33,8 +41,20 @@ export function PhoneForm({
 }) {
   const [state, formAction, pending] = useActionState(action, {});
   const [options, setOptions] = useState(supplierOptions);
-  const [selectedSupplier, setSelectedSupplier] = useState(phone?.supplier_id ?? "");
   const [quickCreateOpen, setQuickCreateOpen] = useState(false);
+
+  const [brand, setBrand] = useState(phone?.brand ?? "");
+  const [model, setModel] = useState(phone?.model ?? "");
+  const [imei, setImei] = useState(phone?.imei ?? "");
+  const [condition, setCondition] = useState(phone?.condition ?? "");
+  const [ram, setRam] = useState(phone?.ram ?? "");
+  const [storage, setStorage] = useState(phone?.storage ?? "");
+  const [color, setColor] = useState(phone?.color ?? "");
+  const [email, setEmail] = useState(phone?.email ?? "");
+  const [selectedSupplier, setSelectedSupplier] = useState(phone?.supplier_id ?? "");
+  const [arrivalDate, setArrivalDate] = useState(
+    phone?.arrival_date ?? new Date().toISOString().slice(0, 10),
+  );
 
   const [purchasePrice, setPurchasePrice] = useState(
     phone?.purchase_price?.toString() ?? "",
@@ -63,46 +83,78 @@ export function PhoneForm({
             name="brand"
             required
             list="brand-options"
-            defaultValue={phone?.brand}
+            value={brand}
+            onChange={(event) => setBrand(event.target.value)}
           />
           <datalist id="brand-options">
-            {COMMON_BRANDS.map((brand) => (
-              <option key={brand} value={brand} />
+            {COMMON_BRANDS.map((b) => (
+              <option key={b} value={b} />
             ))}
           </datalist>
-          <Input label="Modèle / Série" name="model" required defaultValue={phone?.model} />
-          <Input label="IMEI" name="imei" required defaultValue={phone?.imei} />
-          <Select label="État" name="condition" required defaultValue={phone?.condition ?? ""}>
+          <Input
+            label="Modèle / Série"
+            name="model"
+            required
+            value={model}
+            onChange={(event) => setModel(event.target.value)}
+          />
+          <Input
+            label="IMEI"
+            name="imei"
+            required
+            value={imei}
+            onChange={(event) => setImei(event.target.value)}
+            error={state.error?.startsWith("Cet IMEI") ? state.error : undefined}
+          />
+          <Select
+            label="État"
+            name="condition"
+            required
+            value={condition}
+            onChange={(event) => setCondition(event.target.value)}
+          >
             <option value="" disabled>
               Choisir…
             </option>
             <option value="neuf">Neuf</option>
             <option value="quasi_neuf">Quasi neuf</option>
           </Select>
-          <Select label="RAM" name="ram" defaultValue={phone?.ram ?? ""}>
+          <Select label="RAM" name="ram" value={ram} onChange={(event) => setRam(event.target.value)}>
             <option value="">—</option>
-            {RAM_OPTIONS.map((ram) => (
-              <option key={ram} value={ram}>
-                {ram}
+            {RAM_OPTIONS.map((option) => (
+              <option key={option} value={option}>
+                {option}
               </option>
             ))}
           </Select>
-          <Select label="Stockage" name="storage" required defaultValue={phone?.storage ?? ""}>
+          <Select
+            label="Stockage"
+            name="storage"
+            required
+            value={storage}
+            onChange={(event) => setStorage(event.target.value)}
+          >
             <option value="" disabled>
               Choisir…
             </option>
-            {STORAGE_OPTIONS.map((storage) => (
-              <option key={storage} value={storage}>
-                {storage}
+            {STORAGE_OPTIONS.map((option) => (
+              <option key={option} value={option}>
+                {option}
               </option>
             ))}
           </Select>
-          <Input label="Couleur" name="color" defaultValue={phone?.color ?? ""} />
+          <Input
+            label="Couleur"
+            name="color"
+            value={color}
+            onChange={(event) => setColor(event.target.value)}
+          />
           <Input
             label="Adresse mail"
             name="email"
             type="email"
-            defaultValue={phone?.email ?? ""}
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
           />
         </CardContent>
       </Card>
@@ -147,7 +199,8 @@ export function PhoneForm({
             name="arrival_date"
             type="date"
             required
-            defaultValue={phone?.arrival_date ?? new Date().toISOString().slice(0, 10)}
+            value={arrivalDate}
+            onChange={(event) => setArrivalDate(event.target.value)}
           />
           {showPurchaseFields ? (
             <>
@@ -198,7 +251,7 @@ export function PhoneForm({
         </CardContent>
       </Card>
 
-      {state.error ? (
+      {state.error && !state.error.startsWith("Cet IMEI") ? (
         <p className="text-sm font-medium text-danger">{state.error}</p>
       ) : null}
 
@@ -211,7 +264,9 @@ export function PhoneForm({
           open={quickCreateOpen}
           onClose={() => setQuickCreateOpen(false)}
           onCreated={(supplier) => {
-            setOptions((current) => [...current, supplier].sort((a, b) => a.name.localeCompare(b.name)));
+            setOptions((current) =>
+              [...current, supplier].sort((a, b) => a.name.localeCompare(b.name)),
+            );
             setSelectedSupplier(supplier.id);
           }}
         />

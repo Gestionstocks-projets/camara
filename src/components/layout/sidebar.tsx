@@ -10,11 +10,18 @@ import type { UserRole } from "@/types";
 interface SidebarProps {
   role: UserRole;
   shopName: string;
+  shopLogoUrl: string | null;
   mobileOpen: boolean;
   onCloseMobile: () => void;
 }
 
-export function Sidebar({ role, shopName, mobileOpen, onCloseMobile }: SidebarProps) {
+export function Sidebar({
+  role,
+  shopName,
+  shopLogoUrl,
+  mobileOpen,
+  onCloseMobile,
+}: SidebarProps) {
   const pathname = usePathname();
   const items = NAV_ITEMS.filter((item) => !item.ownerOnly || role === "owner");
 
@@ -34,9 +41,18 @@ export function Sidebar({ role, shopName, mobileOpen, onCloseMobile }: SidebarPr
       >
         <div className="flex items-center justify-between gap-2 px-5 py-5">
           <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-md bg-white/10">
-              <Store className="h-4 w-4" />
-            </div>
+            {shopLogoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={shopLogoUrl}
+                alt={shopName}
+                className="h-8 w-8 rounded-md object-cover"
+              />
+            ) : (
+              <div className="flex h-8 w-8 items-center justify-center rounded-md bg-white/10">
+                <Store className="h-4 w-4" />
+              </div>
+            )}
             <span className="font-display text-sm font-bold">{shopName}</span>
           </div>
           <button

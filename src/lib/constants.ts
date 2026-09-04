@@ -56,7 +56,16 @@ export const COMMON_BRANDS = [
   "Infinix",
 ] as const;
 
-export const RAM_OPTIONS = ["4 Go", "6 Go", "8 Go", "12 Go", "16 Go"] as const;
+export const RAM_OPTIONS = [
+  "4 Go",
+  "6 Go",
+  "8 Go",
+  "12 Go",
+  "16 Go",
+  "32 Go",
+  "64 Go",
+  "128 Go",
+] as const;
 export const STORAGE_OPTIONS = [
   "64 Go",
   "128 Go",

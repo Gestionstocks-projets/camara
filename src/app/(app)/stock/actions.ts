@@ -6,8 +6,40 @@ import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import { phoneSchema, phoneUpdateWithoutPurchaseSchema } from "./schema";
 
+export interface PhoneFormValues {
+  brand?: string;
+  model?: string;
+  imei?: string;
+  condition?: string;
+  ram?: string;
+  storage?: string;
+  color?: string;
+  email?: string;
+  supplier_id?: string;
+  arrival_date?: string;
+}
+
 export interface PhoneFormState {
   error?: string;
+  /** Valeurs telles que saisies, renvoyées avec l'erreur pour que le
+   * formulaire ne se vide pas (React 19 réinitialise les champs non
+   * contrôlés après l'action) — cf. retour utilisateur du 2026-09-04. */
+  values?: PhoneFormValues;
+}
+
+function formValues(formData: FormData): PhoneFormValues {
+  return {
+    brand: String(formData.get("brand") ?? ""),
+    model: String(formData.get("model") ?? ""),
+    imei: String(formData.get("imei") ?? ""),
+    condition: String(formData.get("condition") ?? ""),
+    ram: String(formData.get("ram") ?? ""),
+    storage: String(formData.get("storage") ?? ""),
+    color: String(formData.get("color") ?? ""),
+    email: String(formData.get("email") ?? ""),
+    supplier_id: String(formData.get("supplier_id") ?? ""),
+    arrival_date: String(formData.get("arrival_date") ?? ""),
+  };
 }
 
 function readInput(formData: FormData) {
@@ -35,7 +67,10 @@ export async function createPhone(
   const profile = await requireProfile();
   const parsed = readInput(formData);
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Formulaire invalide." };
+    return {
+      error: parsed.error.issues[0]?.message ?? "Formulaire invalide.",
+      values: formValues(formData),
+    };
   }
 
   const supabase = await createClient();
@@ -46,10 +81,11 @@ export async function createPhone(
     .single();
 
   if (error) {
+    const values = formValues(formData);
     if (error.code === "23505") {
-      return { error: "Cet IMEI existe déjà." };
+      return { error: "Cet IMEI existe déjà.", values };
     }
-    return { error: "Impossible d'enregistrer le téléphone." };
+    return { error: "Impossible d'enregistrer le téléphone.", values };
   }
 
   revalidatePath("/stock");
@@ -92,17 +128,21 @@ export async function updatePhone(
   await requireProfile();
   const parsed = readUpdateInput(formData);
   if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Formulaire invalide." };
+    return {
+      error: parsed.error.issues[0]?.message ?? "Formulaire invalide.",
+      values: formValues(formData),
+    };
   }
 
   const supabase = await createClient();
   const { error } = await supabase.from("phones").update(parsed.data).eq("id", id);
 
   if (error) {
+    const values = formValues(formData);
     if (error.code === "23505") {
-      return { error: "Cet IMEI existe déjà." };
+      return { error: "Cet IMEI existe déjà.", values };
     }
-    return { error: "Impossible de modifier le téléphone." };
+    return { error: "Impossible de modifier le téléphone.", values };
   }
 
   revalidatePath("/stock");

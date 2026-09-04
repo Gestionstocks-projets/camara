@@ -13,37 +13,14 @@ import {
 } from "@/components/ui/table";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PeriodFilter } from "@/components/period-filter";
-import { ExportButtons } from "@/components/export-buttons";
 import { formatFCFA } from "@/lib/utils";
 import { resolvePeriod, type PeriodKey } from "@/lib/period";
-import type { ExportColumn } from "@/lib/export";
 import { CreateClientButton } from "./create-client-button";
+import { ClientExportButtons, type ClientExportRow } from "./client-export-buttons";
 
 interface ClientsPageProps {
   searchParams: Promise<Record<string, string | undefined>>;
 }
-
-interface ClientExportRow {
-  first_name: string;
-  last_name: string;
-  phone: string | null;
-  whatsapp: string | null;
-  email: string | null;
-  city: string | null;
-  count: number;
-  total: number;
-}
-
-const clientColumns: ExportColumn<ClientExportRow>[] = [
-  { key: "first_name", label: "Prénom", value: (c) => c.first_name },
-  { key: "last_name", label: "Nom", value: (c) => c.last_name },
-  { key: "phone", label: "Téléphone", value: (c) => c.phone ?? "" },
-  { key: "whatsapp", label: "WhatsApp", value: (c) => c.whatsapp ?? "" },
-  { key: "email", label: "Email", value: (c) => c.email ?? "" },
-  { key: "city", label: "Ville", value: (c) => c.city ?? "" },
-  { key: "count", label: "Nombre d'achats", value: (c) => c.count },
-  { key: "total", label: "Total dépensé", value: (c) => formatFCFA(c.total) },
-];
 
 export default async function ClientsPage({ searchParams }: ClientsPageProps) {
   await requireProfile();
@@ -82,12 +59,10 @@ export default async function ClientsPage({ searchParams }: ClientsPageProps) {
         description="Historique d'achats calculé automatiquement."
         actions={
           <>
-            <ExportButtons
-              data={exportRows}
+            <ClientExportButtons
+              rows={exportRows}
               filename={`clients-${period.from}-au-${period.to}`}
-              title="Clients"
               subtitle={`Période (date de création) : ${period.from} au ${period.to}`}
-              columns={clientColumns}
             />
             <CreateClientButton />
           </>

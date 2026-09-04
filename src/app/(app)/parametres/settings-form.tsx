@@ -18,6 +18,13 @@ export function SettingsForm({ settings }: { settings: Settings }) {
   const [seeProfit, setSeeProfit] = useState(settings.managers_see_profit);
   const logoUrl = logoState.url ?? settings.shop_logo_url;
 
+  const [shopName, setShopName] = useState(settings.shop_name);
+  const [shopPhone, setShopPhone] = useState(settings.shop_phone ?? "");
+  const [shopWhatsapp, setShopWhatsapp] = useState(settings.shop_whatsapp ?? "");
+  const [shopEmail, setShopEmail] = useState(settings.shop_email ?? "");
+  const [invoicePrefix, setInvoicePrefix] = useState(settings.invoice_prefix);
+  const [shopAddress, setShopAddress] = useState(settings.shop_address ?? "");
+
   return (
     <div className="flex flex-col gap-6">
       <Card>
@@ -67,31 +74,41 @@ export function SettingsForm({ settings }: { settings: Settings }) {
               label="Nom de la boutique"
               name="shop_name"
               required
-              defaultValue={settings.shop_name}
+              value={shopName}
+              onChange={(event) => setShopName(event.target.value)}
               className="sm:col-span-2"
             />
-            <Input label="Téléphone" name="shop_phone" defaultValue={settings.shop_phone ?? ""} />
+            <Input
+              label="Téléphone"
+              name="shop_phone"
+              value={shopPhone}
+              onChange={(event) => setShopPhone(event.target.value)}
+            />
             <Input
               label="WhatsApp"
               name="shop_whatsapp"
-              defaultValue={settings.shop_whatsapp ?? ""}
+              value={shopWhatsapp}
+              onChange={(event) => setShopWhatsapp(event.target.value)}
             />
             <Input
               label="Email"
               name="shop_email"
               type="email"
-              defaultValue={settings.shop_email ?? ""}
+              value={shopEmail}
+              onChange={(event) => setShopEmail(event.target.value)}
             />
             <Input
               label="Préfixe de facture"
               name="invoice_prefix"
-              defaultValue={settings.invoice_prefix}
+              value={invoicePrefix}
+              onChange={(event) => setInvoicePrefix(event.target.value)}
               hint="N'affecte que les futures factures."
             />
             <Input
               label="Adresse"
               name="shop_address"
-              defaultValue={settings.shop_address ?? ""}
+              value={shopAddress}
+              onChange={(event) => setShopAddress(event.target.value)}
               className="sm:col-span-2"
             />
           </CardContent>

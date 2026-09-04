@@ -21,10 +21,9 @@ import {
   PAYMENT_STATUS_LABELS,
   PAYMENT_STATUS_TONE,
 } from "@/lib/constants";
-import { ExportButtons } from "@/components/export-buttons";
 import { getVisibilityFlags } from "@/lib/permissions";
 import { getSales } from "./queries";
-import { buildSaleColumns } from "./export-columns";
+import { SaleExportButtons } from "./sale-export-buttons";
 import type { PaymentMethod, PaymentStatus } from "@/types";
 
 interface VentesPageProps {
@@ -52,12 +51,11 @@ export default async function VentesPage({ searchParams }: VentesPageProps) {
         description={`${rows.length} vente(s) sur la période`}
         actions={
           <>
-            <ExportButtons
-              data={rows}
+            <SaleExportButtons
+              rows={rows}
               filename={`ventes-${period.from}-au-${period.to}`}
-              title="Ventes"
               subtitle={`Période : ${period.from} au ${period.to}`}
-              columns={buildSaleColumns(seeProfit)}
+              seeProfit={seeProfit}
             />
             <Link href="/ventes/nouvelle" className={buttonVariants({ size: "sm", variant: "brass" })}>
               + Nouvelle vente

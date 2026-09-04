@@ -13,30 +13,16 @@ import {
 } from "@/components/ui/table";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PeriodFilter } from "@/components/period-filter";
-import { ExportButtons } from "@/components/export-buttons";
 import { resolvePeriod, type PeriodKey } from "@/lib/period";
-import type { ExportColumn } from "@/lib/export";
 import { CreateSupplierButton } from "./create-supplier-button";
+import {
+  SupplierExportButtons,
+  type SupplierExportRow,
+} from "./supplier-export-buttons";
 
 interface FournisseursPageProps {
   searchParams: Promise<Record<string, string | undefined>>;
 }
-
-interface SupplierExportRow {
-  name: string;
-  phone: string | null;
-  whatsapp: string | null;
-  city: string | null;
-  count: number;
-}
-
-const supplierColumns: ExportColumn<SupplierExportRow>[] = [
-  { key: "name", label: "Nom", value: (s) => s.name },
-  { key: "phone", label: "Téléphone", value: (s) => s.phone ?? "" },
-  { key: "whatsapp", label: "WhatsApp", value: (s) => s.whatsapp ?? "" },
-  { key: "city", label: "Ville", value: (s) => s.city ?? "" },
-  { key: "count", label: "Téléphones fournis", value: (s) => s.count },
-];
 
 export default async function FournisseursPage({ searchParams }: FournisseursPageProps) {
   await requireOwner();
@@ -78,12 +64,10 @@ export default async function FournisseursPage({ searchParams }: FournisseursPag
         description="Réservé au propriétaire."
         actions={
           <>
-            <ExportButtons
-              data={exportRows}
+            <SupplierExportButtons
+              rows={exportRows}
               filename={`fournisseurs-${period.from}-au-${period.to}`}
-              title="Fournisseurs"
               subtitle={`Période (date de création) : ${period.from} au ${period.to}`}
-              columns={supplierColumns}
             />
             <CreateSupplierButton />
           </>

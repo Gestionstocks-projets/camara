@@ -11,11 +11,15 @@ export default async function AppLayout({
   const supabase = await createClient();
   const { data: settings } = await supabase
     .from("settings")
-    .select("shop_name")
+    .select("shop_name, shop_logo_url")
     .single();
 
   return (
-    <AppShell profile={profile} shopName={settings?.shop_name ?? "Ma Boutique"}>
+    <AppShell
+      profile={profile}
+      shopName={settings?.shop_name ?? "Ma Boutique"}
+      shopLogoUrl={settings?.shop_logo_url ?? null}
+    >
       {children}
     </AppShell>
   );

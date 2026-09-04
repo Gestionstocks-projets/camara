@@ -8,10 +8,12 @@ import type { Profile } from "@/types";
 export function AppShell({
   profile,
   shopName,
+  shopLogoUrl,
   children,
 }: {
   profile: Profile;
   shopName: string;
+  shopLogoUrl: string | null;
   children: ReactNode;
 }) {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -21,6 +23,7 @@ export function AppShell({
       <Sidebar
         role={profile.role}
         shopName={shopName}
+        shopLogoUrl={shopLogoUrl}
         mobileOpen={mobileOpen}
         onCloseMobile={() => setMobileOpen(false)}
       />

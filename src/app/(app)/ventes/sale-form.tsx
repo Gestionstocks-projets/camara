@@ -49,6 +49,9 @@ export function SaleForm({
     selectedPhone ? String(selectedPhone.planned_sale_price) : "",
   );
   const [discount, setDiscount] = useState("0");
+  const [saleDate, setSaleDate] = useState(new Date().toISOString().slice(0, 10));
+  const [paymentMethod, setPaymentMethod] = useState("");
+  const [warranty, setWarranty] = useState("");
   const [paymentStatus, setPaymentStatus] = useState<"paye" | "partiel" | "en_attente">(
     "paye",
   );
@@ -147,7 +150,8 @@ export function SaleForm({
             name="sale_date"
             type="date"
             required
-            defaultValue={new Date().toISOString().slice(0, 10)}
+            value={saleDate}
+            onChange={(event) => setSaleDate(event.target.value)}
           />
           <Input
             label="Prix de vente"
@@ -166,7 +170,13 @@ export function SaleForm({
             value={discount}
             onChange={(event) => setDiscount(event.target.value)}
           />
-          <Select label="Mode de paiement" name="payment_method" required defaultValue="">
+          <Select
+            label="Mode de paiement"
+            name="payment_method"
+            required
+            value={paymentMethod}
+            onChange={(event) => setPaymentMethod(event.target.value)}
+          >
             <option value="" disabled>
               Choisir…
             </option>
@@ -176,7 +186,13 @@ export function SaleForm({
               </option>
             ))}
           </Select>
-          <Input label="Garantie accordée" name="warranty" placeholder="Ex. 3 mois" />
+          <Input
+            label="Garantie accordée"
+            name="warranty"
+            placeholder="Ex. 3 mois"
+            value={warranty}
+            onChange={(event) => setWarranty(event.target.value)}
+          />
         </CardContent>
       </Card>
 

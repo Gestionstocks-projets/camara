@@ -19,12 +19,11 @@ import {
   PHONE_STATUS_LABELS,
   PHONE_STATUS_TONE,
 } from "@/lib/constants";
-import { ExportButtons } from "@/components/export-buttons";
 import { getPhones, type PhoneFilters } from "./queries";
 import { FiltersBar } from "./filters-bar";
 import { createClient } from "@/lib/supabase/server";
 import { getVisibilityFlags } from "@/lib/permissions";
-import { buildStockColumns } from "./export-columns";
+import { StockExportButtons } from "./stock-export-buttons";
 import type { PhoneCondition, PhoneStatus } from "@/types";
 
 interface StockPageProps {
@@ -62,11 +61,10 @@ export default async function StockPage({ searchParams }: StockPageProps) {
         description={`${phones.length} téléphone(s)`}
         actions={
           <>
-            <ExportButtons
-              data={phones}
-              filename="stock"
-              title="Stock"
-              columns={buildStockColumns(supplierNameById, seePurchasePrice)}
+            <StockExportButtons
+              phones={phones}
+              supplierNames={[...supplierNameById.entries()]}
+              seePurchasePrice={seePurchasePrice}
             />
             <Link href="/stock/nouveau" className={buttonVariants({ size: "sm" })}>
               + Nouveau téléphone
