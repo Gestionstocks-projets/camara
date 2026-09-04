@@ -39,11 +39,13 @@ export default async function ClientDetailPage({
 
   const { data: sales } = await supabase
     .from("sales")
-    .select("id, phone_id, sale_date, sale_price, discount, payment_status")
+    .select("id, phone_id, sale_date, sale_price, accessories_total, discount, payment_status")
     .eq("client_id", id)
     .order("sale_date", { ascending: false });
 
-  const phoneIds = (sales ?? []).map((sale) => sale.phone_id);
+  const phoneIds = (sales ?? [])
+    .map((sale) => sale.phone_id)
+    .filter((id): id is string => id !== null);
   const { data: phones } =
     phoneIds.length > 0
       ? await supabase.from("phones").select("id, brand, model").in("id", phoneIds)
@@ -58,7 +60,7 @@ export default async function ClientDetailPage({
   const invoiceBySaleId = new Map((invoices ?? []).map((inv) => [inv.sale_id, inv]));
 
   const totalSpent = (sales ?? []).reduce(
-    (sum, sale) => sum + (sale.sale_price - sale.discount),
+    (sum, sale) => sum + (sale.sale_price + sale.accessories_total - sale.discount),
     0,
   );
 
@@ -116,16 +118,18 @@ export default async function ClientDetailPage({
           </TableHead>
           <TableBody>
             {sales.map((sale) => {
-              const phone = phonesById.get(sale.phone_id);
+              const phone = sale.phone_id ? phonesById.get(sale.phone_id) : undefined;
               const invoice = invoiceBySaleId.get(sale.id);
+              const hasAccessories = sale.accessories_total > 0;
               return (
                 <TableRow key={sale.id}>
                   <TableCell className="font-semibold">
-                    {phone ? `${phone.brand} ${phone.model}` : "—"}
+                    {phone ? `${phone.brand} ${phone.model}` : hasAccessories ? "Accessoires" : "—"}
+                    {phone && hasAccessories ? " + accessoires" : ""}
                   </TableCell>
                   <TableCell>{formatDate(sale.sale_date)}</TableCell>
                   <TableCell className="tabular">
-                    {formatFCFA(sale.sale_price - sale.discount)}
+                    {formatFCFA(sale.sale_price + sale.accessories_total - sale.discount)}
                   </TableCell>
                   <TableCell>
                     <Badge tone={PAYMENT_STATUS_TONE[sale.payment_status]}>

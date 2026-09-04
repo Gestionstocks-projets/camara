@@ -30,7 +30,7 @@ export default async function FacturesPage() {
     saleIds.length > 0
       ? await supabase
           .from("sales")
-          .select("id, client_id, phone_id, sale_price, discount, payment_status")
+          .select("id, client_id, phone_id, sale_price, accessories_total, discount, payment_status")
           .in("id", saleIds)
       : { data: [] };
   const salesById = new Map((sales ?? []).map((sale) => [sale.id, sale]));
@@ -42,7 +42,9 @@ export default async function FacturesPage() {
       : { data: [] };
   const clientsById = new Map((clients ?? []).map((client) => [client.id, client]));
 
-  const phoneIds = (sales ?? []).map((sale) => sale.phone_id);
+  const phoneIds = (sales ?? [])
+    .map((sale) => sale.phone_id)
+    .filter((id): id is string => id !== null);
   const { data: phones } =
     phoneIds.length > 0
       ? await supabase.from("phones").select("id, brand, model").in("id", phoneIds)
@@ -61,7 +63,7 @@ export default async function FacturesPage() {
             <TableTh>Numéro</TableTh>
             <TableTh>Date</TableTh>
             <TableTh>Client</TableTh>
-            <TableTh>Téléphone</TableTh>
+            <TableTh>Article</TableTh>
             <TableTh>Montant</TableTh>
             <TableTh>Statut</TableTh>
           </TableHead>
@@ -69,7 +71,7 @@ export default async function FacturesPage() {
             {invoices.map((invoice) => {
               const sale = salesById.get(invoice.sale_id);
               const client = sale ? clientsById.get(sale.client_id) : null;
-              const phone = sale ? phonesById.get(sale.phone_id) : null;
+              const phone = sale?.phone_id ? phonesById.get(sale.phone_id) : null;
               return (
                 <TableRow key={invoice.id}>
                   <TableCell className="font-semibold">
@@ -81,9 +83,17 @@ export default async function FacturesPage() {
                   <TableCell>
                     {client ? `${client.first_name} ${client.last_name}` : "—"}
                   </TableCell>
-                  <TableCell>{phone ? `${phone.brand} ${phone.model}` : "—"}</TableCell>
+                  <TableCell>
+                    {phone
+                      ? `${phone.brand} ${phone.model}`
+                      : sale && sale.accessories_total > 0
+                        ? "Accessoires"
+                        : "—"}
+                  </TableCell>
                   <TableCell className="tabular">
-                    {sale ? formatFCFA(sale.sale_price - sale.discount) : "—"}
+                    {sale
+                      ? formatFCFA(sale.sale_price + sale.accessories_total - sale.discount)
+                      : "—"}
                   </TableCell>
                   <TableCell>
                     {sale ? (

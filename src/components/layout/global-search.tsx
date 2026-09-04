@@ -7,12 +7,19 @@ import type { SearchResults } from "@/lib/search";
 
 const SECTION_LABELS: Array<{ key: keyof SearchResults; label: string }> = [
   { key: "phones", label: "Téléphones" },
+  { key: "accessories", label: "Accessoires" },
   { key: "clients", label: "Clients" },
   { key: "suppliers", label: "Fournisseurs" },
   { key: "invoices", label: "Factures" },
 ];
 
-const EMPTY_RESULTS: SearchResults = { phones: [], clients: [], suppliers: [], invoices: [] };
+const EMPTY_RESULTS: SearchResults = {
+  phones: [],
+  accessories: [],
+  clients: [],
+  suppliers: [],
+  invoices: [],
+};
 
 export function GlobalSearch() {
   const router = useRouter();

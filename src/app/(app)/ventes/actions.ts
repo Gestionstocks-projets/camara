@@ -17,10 +17,11 @@ export async function createSale(
   const profile = await requireProfile();
 
   const parsed = saleSchema.safeParse({
-    phone_id: formData.get("phone_id"),
+    phone_id: formData.get("phone_id") || undefined,
     client_id: formData.get("client_id"),
     sale_date: formData.get("sale_date"),
-    sale_price: formData.get("sale_price"),
+    sale_price: formData.get("sale_price") || 0,
+    cart: formData.get("cart") || "[]",
     discount: formData.get("discount") || 0,
     payment_method: formData.get("payment_method"),
     warranty: formData.get("warranty") || undefined,
@@ -37,14 +38,31 @@ export async function createSale(
 
   const supabase = await createClient();
 
-  const { data: phone } = await supabase
-    .from("phones")
-    .select("status")
-    .eq("id", input.phone_id)
-    .single();
+  if (input.phone_id) {
+    const { data: phone } = await supabase
+      .from("phones")
+      .select("status")
+      .eq("id", input.phone_id)
+      .single();
 
-  if (!phone || phone.status !== "en_stock") {
-    return { error: "Ce téléphone vient d'être vendu par quelqu'un d'autre." };
+    if (!phone || phone.status !== "en_stock") {
+      return { error: "Ce téléphone vient d'être vendu par quelqu'un d'autre." };
+    }
+  }
+
+  // Coût unitaire relu côté serveur — jamais fait confiance au client, pour
+  // ne jamais exposer purchase_price à un gérant sans le droit, et pour
+  // empêcher toute manipulation du bénéfice depuis le navigateur.
+  let unitCostByAccessoryId = new Map<string, number>();
+  if (input.cart.length > 0) {
+    const { data: accessories } = await supabase
+      .from("accessories")
+      .select("id, purchase_price")
+      .in(
+        "id",
+        input.cart.map((item) => item.accessory_id),
+      );
+    unitCostByAccessoryId = new Map((accessories ?? []).map((a) => [a.id, a.purchase_price]));
   }
 
   const { data: sale, error: saleError } = await supabase
@@ -71,6 +89,27 @@ export async function createSale(
     return { error: "Impossible d'enregistrer la vente." };
   }
 
+  for (const item of input.cart) {
+    const unitCost = unitCostByAccessoryId.get(item.accessory_id) ?? 0;
+    const { error: itemError } = await supabase.from("sale_items").insert({
+      sale_id: sale.id,
+      accessory_id: item.accessory_id,
+      quantity: item.quantity,
+      unit_price: item.unit_price,
+      unit_cost: unitCost,
+    });
+    if (itemError) {
+      // Vente déjà créée mais un article n'a pas pu être ajouté (le plus
+      // souvent : stock insuffisant, contrainte quantity_in_stock >= 0) —
+      // on redirige vers la vente plutôt que de laisser l'utilisateur sans
+      // retour ; il pourra constater le souci et contacter le propriétaire.
+      revalidatePath("/stock");
+      revalidatePath("/accessoires");
+      revalidatePath("/ventes");
+      redirect(`/ventes/${sale.id}`);
+    }
+  }
+
   if (amountPaid > 0) {
     await supabase.from("sale_payments").insert({
       sale_id: sale.id,
@@ -82,17 +121,19 @@ export async function createSale(
 
   const { data: invoice, error: invoiceError } = await supabase
     .from("invoices")
-    .insert({ sale_id: sale.id })
+    // `number` est rempli par le trigger `generate_invoice_number` — le
+    // type généré l'exige pourtant explicitement (il ne connaît pas les
+    // triggers), d'où l'assertion.
+    .insert({ sale_id: sale.id } as { sale_id: string; number: string })
     .select("id")
     .single();
 
   revalidatePath("/stock");
+  revalidatePath("/accessoires");
   revalidatePath("/ventes");
   revalidatePath("/clients");
 
   if (invoiceError || !invoice) {
-    // La vente est enregistrée même si la facture a échoué à se générer :
-    // on redirige vers la vente plutôt que d'échouer silencieusement.
     redirect(`/ventes/${sale.id}`);
   }
 
@@ -121,13 +162,13 @@ export async function recordPayment(
   const supabase = await createClient();
   const { data: sale } = await supabase
     .from("sales")
-    .select("sale_price, discount, amount_paid")
+    .select("sale_price, accessories_total, discount, amount_paid")
     .eq("id", saleId)
     .single();
 
   if (!sale) return { error: "Vente introuvable." };
 
-  const total = sale.sale_price - sale.discount;
+  const total = sale.sale_price + sale.accessories_total - sale.discount;
   const newAmountPaid = sale.amount_paid + parsed.data.amount;
   if (newAmountPaid > total) {
     return { error: "Ce paiement dépasse le montant restant dû." };

@@ -11,6 +11,7 @@ export interface SaleExportRow {
   sale: SaleMasked;
   phone: { brand: string; model: string; imei: string; condition?: PhoneCondition; ram?: string | null; storage?: string } | null;
   client: { first_name: string; last_name: string } | null;
+  accessoryItemCount: number;
 }
 
 export function buildSaleColumns(seeProfit: boolean): ExportColumn<SaleExportRow>[] {
@@ -26,8 +27,23 @@ export function buildSaleColumns(seeProfit: boolean): ExportColumn<SaleExportRow
     },
     { key: "ram", label: "RAM", value: (r) => r.phone?.ram ?? "" },
     { key: "storage", label: "Stockage", value: (r) => r.phone?.storage ?? "" },
-    { key: "sale_price", label: "Prix de vente", value: (r) => formatFCFA(r.sale.sale_price) },
+    { key: "phone_price", label: "Prix téléphone", value: (r) => formatFCFA(r.sale.sale_price) },
+    {
+      key: "accessories_count",
+      label: "Accessoires (unités)",
+      value: (r) => r.accessoryItemCount,
+    },
+    {
+      key: "accessories_total",
+      label: "Montant accessoires",
+      value: (r) => formatFCFA(r.sale.accessories_total),
+    },
     { key: "discount", label: "Remise", value: (r) => formatFCFA(r.sale.discount) },
+    {
+      key: "total",
+      label: "Total",
+      value: (r) => formatFCFA(r.sale.sale_price + r.sale.accessories_total - r.sale.discount),
+    },
   ];
 
   if (seeProfit) {

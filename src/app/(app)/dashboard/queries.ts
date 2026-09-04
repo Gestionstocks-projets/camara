@@ -6,6 +6,14 @@ import type { PeriodRange } from "@/lib/period";
 
 const DATE_FORMAT = "yyyy-MM-dd";
 
+type RevenueRow = {
+  sale_price: number;
+  accessories_total: number;
+  discount: number;
+  profit: number;
+  accessories_profit: number;
+};
+
 export async function getDashboardData(profile: Profile, period: PeriodRange) {
   const supabase = await createClient();
   const { seeProfit, seePurchasePrice } = await getVisibilityFlags(profile);
@@ -13,21 +21,25 @@ export async function getDashboardData(profile: Profile, period: PeriodRange) {
   const today = format(new Date(), DATE_FORMAT);
   const monthStart = format(startOfMonth(new Date()), DATE_FORMAT);
 
+  const REVENUE_COLUMNS = "sale_price, accessories_total, discount, profit, accessories_profit";
+
   const [
     { data: salesToday },
     { data: salesMonth },
     { data: salesAll },
     { data: salesPeriod },
     { data: stockPhones },
+    { data: stockAccessories },
+    { data: lowStockAccessories },
     { data: recentSalesRaw },
   ] = await Promise.all([
-    supabase.from("sales").select("sale_price, discount, profit").eq("sale_date", today),
+    supabase.from("sales").select(REVENUE_COLUMNS).eq("sale_date", today),
     supabase
       .from("sales")
-      .select("sale_price, discount, profit")
+      .select(REVENUE_COLUMNS)
       .gte("sale_date", monthStart)
       .lte("sale_date", today),
-    supabase.from("sales").select("sale_price, discount, profit"),
+    supabase.from("sales").select(REVENUE_COLUMNS),
     supabase
       .from("sales")
       .select("id, phone_id, client_id, sale_date, sale_price, discount, payment_status")
@@ -37,30 +49,53 @@ export async function getDashboardData(profile: Profile, period: PeriodRange) {
     supabase
       .from("phones")
       .select("id, condition, status, purchase_price, extra_fees, brand"),
+    supabase.from("accessories").select("quantity_in_stock, purchase_price"),
+    supabase
+      .from("accessories")
+      .select("id, name, category, quantity_in_stock, low_stock_threshold")
+      .order("quantity_in_stock", { ascending: true }),
     supabase
       .from("sales")
-      .select("id, phone_id, client_id, sale_date, sale_price, discount, payment_status")
+      .select(
+        "id, phone_id, client_id, sale_date, sale_price, accessories_total, discount, payment_status",
+      )
       .order("created_at", { ascending: false })
       .limit(6),
   ]);
 
-  const sumRevenue = (rows: { sale_price: number; discount: number }[] | null) =>
-    (rows ?? []).reduce((sum, row) => sum + (row.sale_price - row.discount), 0);
-  const sumProfit = (rows: { profit: number }[] | null) =>
+  const sumRevenue = (rows: RevenueRow[] | null) =>
+    (rows ?? []).reduce(
+      (sum, row) => sum + (row.sale_price + row.accessories_total - row.discount),
+      0,
+    );
+  const sumProfit = (rows: RevenueRow[] | null) =>
     (rows ?? []).reduce((sum, row) => sum + row.profit, 0);
+  const sumAccessoriesRevenue = (rows: RevenueRow[] | null) =>
+    (rows ?? []).reduce((sum, row) => sum + row.accessories_total, 0);
+  const sumAccessoriesProfit = (rows: RevenueRow[] | null) =>
+    (rows ?? []).reduce((sum, row) => sum + row.accessories_profit, 0);
+  const sumPhoneRevenue = (rows: RevenueRow[] | null) =>
+    (rows ?? []).reduce((sum, row) => sum + (row.sale_price - row.discount), 0);
+  const sumPhoneProfit = (rows: RevenueRow[] | null) =>
+    (rows ?? []).reduce((sum, row) => sum + (row.profit - row.accessories_profit), 0);
 
   const phones = stockPhones ?? [];
   const inStock = phones.filter((phone) => phone.status === "en_stock");
 
-  const stockValue = inStock.reduce(
+  const phoneStockValue = inStock.reduce(
     (sum, phone) => sum + phone.purchase_price + phone.extra_fees,
     0,
   );
+  const accessoryStockValue = (stockAccessories ?? []).reduce(
+    (sum, acc) => sum + acc.purchase_price * acc.quantity_in_stock,
+    0,
+  );
 
-  // Marques les plus vendues (sur la période) : jointure en mémoire avec `phones`.
+  // Marques les plus vendues (téléphones, sur la période) : jointure en mémoire.
   const phonesById = new Map(phones.map((phone) => [phone.id, phone]));
   const brandCounts = new Map<string, number>();
   for (const sale of salesPeriod ?? []) {
+    if (!sale.phone_id) continue;
     const brand = phonesById.get(sale.phone_id)?.brand ?? "Autre";
     brandCounts.set(brand, (brandCounts.get(brand) ?? 0) + 1);
   }
@@ -89,7 +124,9 @@ export async function getDashboardData(profile: Profile, period: PeriodRange) {
 
   // Clients/téléphones pour "Dernières ventes".
   const recentSales = recentSalesRaw ?? [];
-  const recentPhoneIds = recentSales.map((sale) => sale.phone_id);
+  const recentPhoneIds = recentSales
+    .map((sale) => sale.phone_id)
+    .filter((id): id is string => id !== null);
   const recentClientIds = recentSales.map((sale) => sale.client_id);
   const [{ data: recentPhones }, { data: recentClients }, { data: recentInvoices }] =
     await Promise.all([
@@ -126,18 +163,31 @@ export async function getDashboardData(profile: Profile, period: PeriodRange) {
           total: sumProfit(salesAll),
         }
       : null,
+    breakdown: {
+      phoneRevenueMonth: sumPhoneRevenue(salesMonth),
+      accessoryRevenueMonth: sumAccessoriesRevenue(salesMonth),
+      phoneProfitMonth: seeProfit ? sumPhoneProfit(salesMonth) : null,
+      accessoryProfitMonth: seeProfit ? sumAccessoriesProfit(salesMonth) : null,
+    },
     stock: {
       inStockCount: inStock.length,
       soldInPeriodCount: (salesPeriod ?? []).length,
       newCount: inStock.filter((p) => p.condition === "neuf").length,
       likeNewCount: inStock.filter((p) => p.condition === "quasi_neuf").length,
-      value: seePurchasePrice ? stockValue : null,
+      value: seePurchasePrice ? phoneStockValue + accessoryStockValue : null,
+      accessoryUnitsInStock: (stockAccessories ?? []).reduce(
+        (sum, a) => sum + a.quantity_in_stock,
+        0,
+      ),
     },
+    lowStockAccessories: (lowStockAccessories ?? []).filter(
+      (a) => a.quantity_in_stock <= a.low_stock_threshold,
+    ),
     topBrands,
     chartData,
     recentSales: recentSales.map((sale) => ({
       ...sale,
-      phone: recentPhonesById.get(sale.phone_id) ?? null,
+      phone: sale.phone_id ? (recentPhonesById.get(sale.phone_id) ?? null) : null,
       client: recentClientsById.get(sale.client_id) ?? null,
       invoice: recentInvoicesBySale.get(sale.id) ?? null,
     })),

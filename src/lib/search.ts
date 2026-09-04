@@ -10,6 +10,7 @@ export interface SearchResult {
 
 export interface SearchResults {
   phones: SearchResult[];
+  accessories: SearchResult[];
   clients: SearchResult[];
   suppliers: SearchResult[];
   invoices: SearchResult[];
@@ -36,7 +37,7 @@ export async function globalSearch(
 ): Promise<SearchResults> {
   const trimmed = query.trim();
   if (trimmed.length < 2) {
-    return { phones: [], clients: [], suppliers: [], invoices: [] };
+    return { phones: [], accessories: [], clients: [], suppliers: [], invoices: [] };
   }
 
   const supabase = await createClient();
@@ -54,11 +55,16 @@ export async function globalSearch(
   ];
   if (condition) phoneOrParts.push(`condition.eq.${condition}`);
 
-  const [phonesRes, clientsRes, suppliersRes, invoicesRes] = await Promise.all([
+  const [phonesRes, accessoriesRes, clientsRes, suppliersRes, invoicesRes] = await Promise.all([
     supabase
       .from("phones")
       .select("id, brand, model, imei")
       .or(phoneOrParts.join(","))
+      .limit(5),
+    supabase
+      .from("accessories")
+      .select("id, name, compatible_with")
+      .or(`name.ilike.${like},compatible_with.ilike.${like}`)
       .limit(5),
     supabase
       .from("clients")
@@ -77,6 +83,12 @@ export async function globalSearch(
       title: `${phone.brand} ${phone.model}`,
       subtitle: phone.imei,
       href: `/stock/${phone.id}`,
+    })),
+    accessories: (accessoriesRes.data ?? []).map((accessory) => ({
+      id: accessory.id,
+      title: accessory.name,
+      subtitle: accessory.compatible_with ?? undefined,
+      href: `/accessoires/${accessory.id}`,
     })),
     clients: (clientsRes.data ?? []).map((client) => ({
       id: client.id,

@@ -10,7 +10,9 @@ import { formatDate, formatFCFA } from "@/lib/utils";
 /**
  * Rassemble toutes les données d'une facture prêtes à afficher — réutilisé
  * tel quel par la page HTML (`[id]/page.tsx`) et le document PDF
- * (`invoice-pdf.tsx`) pour ne jamais dupliquer la mise en forme.
+ * (`invoice-pdf.tsx`) pour ne jamais dupliquer la mise en forme. Une
+ * facture peut porter un téléphone (optionnel) et/ou des lignes
+ * d'accessoires (panier, prompt "Accessoires" du 2026-09-04).
  */
 export async function getInvoiceData(invoiceId: string) {
   const supabase = await createClient();
@@ -29,15 +31,19 @@ export async function getInvoiceData(invoiceId: string) {
     .single();
   if (!sale) notFound();
 
-  const [{ data: settings }, { data: phone }, { data: client }] = await Promise.all([
-    supabase.from("settings").select("*").single(),
-    supabase.from("phones").select("*").eq("id", sale.phone_id).single(),
-    supabase.from("clients").select("*").eq("id", sale.client_id).single(),
-  ]);
+  const [{ data: settings }, { data: phone }, { data: client }, { data: items }] =
+    await Promise.all([
+      supabase.from("settings").select("*").single(),
+      sale.phone_id
+        ? supabase.from("phones").select("*").eq("id", sale.phone_id).single()
+        : Promise.resolve({ data: null }),
+      supabase.from("clients").select("*").eq("id", sale.client_id).single(),
+      supabase.from("sale_items").select("*, accessories(name, category)").eq("sale_id", sale.id),
+    ]);
 
-  if (!phone || !client) notFound();
+  if (!client) notFound();
 
-  const total = sale.sale_price - sale.discount;
+  const total = sale.sale_price + sale.accessories_total - sale.discount;
 
   return {
     invoice: {
@@ -58,17 +64,27 @@ export async function getInvoiceData(invoiceId: string) {
       email: client.email,
       whatsapp: client.whatsapp,
     },
-    phone: {
-      brand: phone.brand,
-      model: phone.model,
-      imei: phone.imei,
-      ram: phone.ram,
-      storage: phone.storage,
-      color: phone.color,
-      condition: PHONE_CONDITION_LABELS[phone.condition],
-    },
+    phone: phone
+      ? {
+          brand: phone.brand,
+          model: phone.model,
+          imei: phone.imei,
+          ram: phone.ram,
+          storage: phone.storage,
+          color: phone.color,
+          condition: PHONE_CONDITION_LABELS[phone.condition],
+          priceLabel: formatFCFA(sale.sale_price),
+        }
+      : null,
+    accessoryLines: (items ?? []).map((item) => ({
+      name: item.accessories?.name ?? "Accessoire",
+      quantity: item.quantity,
+      unitPriceLabel: formatFCFA(item.unit_price),
+      lineTotalLabel: formatFCFA(item.unit_price * item.quantity),
+    })),
     sale: {
       salePriceLabel: formatFCFA(sale.sale_price),
+      accessoriesTotalLabel: formatFCFA(sale.accessories_total),
       discountLabel: formatFCFA(sale.discount),
       totalLabel: formatFCFA(total),
       total,

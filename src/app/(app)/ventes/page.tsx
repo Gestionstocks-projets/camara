@@ -74,9 +74,9 @@ export default async function VentesPage({ searchParams }: VentesPageProps) {
         <Table>
           <TableHead>
             <TableTh>Date</TableTh>
-            <TableTh>Téléphone</TableTh>
+            <TableTh>Article(s)</TableTh>
             <TableTh>Client</TableTh>
-            <TableTh>Prix</TableTh>
+            <TableTh>Total</TableTh>
             <TableTh>Remise</TableTh>
             <TableTh>Bénéfice</TableTh>
             <TableTh>Paiement</TableTh>
@@ -84,7 +84,7 @@ export default async function VentesPage({ searchParams }: VentesPageProps) {
             <TableTh>Facture</TableTh>
           </TableHead>
           <TableBody>
-            {rows.map(({ sale, phone, client, invoice }) => (
+            {rows.map(({ sale, phone, client, invoice, accessoryItemCount }) => (
               <TableRow key={sale.id}>
                 <TableCell>{formatDate(sale.sale_date)}</TableCell>
                 <TableCell className="font-semibold">
@@ -92,9 +92,10 @@ export default async function VentesPage({ searchParams }: VentesPageProps) {
                     <Link href={`/stock/${phone.id}`} className="hover:underline">
                       {phone.brand} {phone.model}
                     </Link>
-                  ) : (
-                    "—"
-                  )}
+                  ) : null}
+                  {phone && accessoryItemCount > 0 ? " + " : null}
+                  {accessoryItemCount > 0 ? `${accessoryItemCount} accessoire(s)` : null}
+                  {!phone && accessoryItemCount === 0 ? "—" : null}
                 </TableCell>
                 <TableCell>
                   {client ? (
@@ -105,7 +106,9 @@ export default async function VentesPage({ searchParams }: VentesPageProps) {
                     "—"
                   )}
                 </TableCell>
-                <TableCell className="tabular">{formatFCFA(sale.sale_price)}</TableCell>
+                <TableCell className="tabular">
+                  {formatFCFA(sale.sale_price + sale.accessories_total)}
+                </TableCell>
                 <TableCell className="tabular">{formatFCFA(sale.discount)}</TableCell>
                 <TableCell className="tabular text-brass">
                   {sale.profit !== undefined ? formatFCFA(sale.profit) : "—"}

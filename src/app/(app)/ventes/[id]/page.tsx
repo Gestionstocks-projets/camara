@@ -36,9 +36,11 @@ export default async function SaleDetailPage({
 
   const { seeProfit } = await getVisibilityFlags(profile);
 
-  const [{ data: phone }, { data: client }, { data: invoice }, { data: payments }] =
+  const [{ data: phone }, { data: client }, { data: invoice }, { data: payments }, { data: items }] =
     await Promise.all([
-      supabase.from("phones").select("id, brand, model, imei").eq("id", sale.phone_id).single(),
+      sale.phone_id
+        ? supabase.from("phones").select("id, brand, model, imei").eq("id", sale.phone_id).single()
+        : Promise.resolve({ data: null }),
       supabase
         .from("clients")
         .select("id, first_name, last_name")
@@ -50,12 +52,16 @@ export default async function SaleDetailPage({
         .select("id, amount, method, paid_at")
         .eq("sale_id", sale.id)
         .order("paid_at", { ascending: true }),
+      supabase
+        .from("sale_items")
+        .select("id, quantity, unit_price, accessories(name)")
+        .eq("sale_id", sale.id),
     ]);
 
   return (
     <div className="mx-auto max-w-2xl">
       <PageHeader
-        title={phone ? `${phone.brand} ${phone.model}` : "Vente"}
+        title={phone ? `${phone.brand} ${phone.model}` : "Vente d'accessoires"}
         description={client ? `${client.first_name} ${client.last_name}` : undefined}
         actions={
           invoice ? (
@@ -73,10 +79,30 @@ export default async function SaleDetailPage({
         <Badge tone="neutral">{PAYMENT_METHOD_LABELS[sale.payment_method]}</Badge>
       </div>
 
+      {(items ?? []).length > 0 ? (
+        <Card className="mb-6">
+          <CardContent className="p-5">
+            <h2 className="mb-3 font-display text-sm font-bold">Accessoires vendus</h2>
+            <div className="flex flex-col gap-2 text-sm">
+              {(items ?? []).map((item) => (
+                <div key={item.id} className="flex items-center justify-between">
+                  <span>
+                    {item.accessories?.name ?? "Accessoire"} × {item.quantity}
+                  </span>
+                  <span className="tabular font-semibold">
+                    {formatFCFA(item.unit_price * item.quantity)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      ) : null}
+
       <Card className="mb-6">
         <CardContent className="grid gap-4 p-5 sm:grid-cols-3">
           <Field label="Date de vente" value={formatDate(sale.sale_date)} />
-          <Field label="Prix de vente" value={formatFCFA(sale.sale_price)} />
+          {phone ? <Field label="Prix du téléphone" value={formatFCFA(sale.sale_price)} /> : null}
           <Field label="Remise" value={formatFCFA(sale.discount)} />
           {seeProfit ? (
             <Field label="Bénéfice" value={formatFCFA(sale.profit)} valueClassName="text-brass" />

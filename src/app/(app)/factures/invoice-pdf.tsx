@@ -54,24 +54,36 @@ export function InvoicePdf({ data }: { data: InvoiceData }) {
           {data.client.email ? <Text style={styles.muted}>{data.client.email}</Text> : null}
         </View>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Téléphone</Text>
-          <Text>
-            {data.phone.brand} {data.phone.model} — {data.phone.condition}
-          </Text>
-          <Text style={styles.muted}>IMEI : {data.phone.imei}</Text>
-          <Text style={styles.muted}>
-            {[data.phone.ram, data.phone.storage, data.phone.color].filter(Boolean).join(" · ")}
-          </Text>
-        </View>
+        {data.phone ? (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Téléphone</Text>
+            <Text>
+              {data.phone.brand} {data.phone.model} — {data.phone.condition}
+            </Text>
+            <Text style={styles.muted}>IMEI : {data.phone.imei}</Text>
+            <Text style={styles.muted}>
+              {[data.phone.ram, data.phone.storage, data.phone.color].filter(Boolean).join(" · ")}
+            </Text>
+          </View>
+        ) : null}
 
         <View style={styles.divider} />
 
         <View style={styles.section}>
-          <View style={styles.row}>
-            <Text>Prix de vente</Text>
-            <Text>{data.sale.salePriceLabel}</Text>
-          </View>
+          {data.phone ? (
+            <View style={styles.row}>
+              <Text>Téléphone</Text>
+              <Text>{data.phone.priceLabel}</Text>
+            </View>
+          ) : null}
+          {data.accessoryLines.map((line, index) => (
+            <View style={styles.row} key={index}>
+              <Text>
+                {line.name} × {line.quantity}
+              </Text>
+              <Text>{line.lineTotalLabel}</Text>
+            </View>
+          ))}
           <View style={styles.row}>
             <Text>Remise</Text>
             <Text>{data.sale.discountLabel}</Text>

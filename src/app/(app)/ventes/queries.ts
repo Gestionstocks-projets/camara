@@ -10,12 +10,13 @@ export interface SaleFilters {
 }
 
 const SALE_COLUMNS =
-  "id, phone_id, client_id, sale_date, sale_price, discount, profit, payment_method, warranty, payment_status, amount_paid, amount_due, sold_by, created_at";
+  "id, phone_id, client_id, sale_date, sale_price, accessories_total, accessories_profit, discount, profit, payment_method, warranty, payment_status, amount_paid, amount_due, sold_by, created_at";
 
 function maskSale(sale: SaleMasked, seeProfit: boolean): SaleMasked {
   if (seeProfit) return sale;
   const masked: SaleMasked = { ...sale };
   delete masked.profit;
+  delete masked.accessories_profit;
   return masked;
 }
 
@@ -36,13 +37,10 @@ export async function getSales(profile: Profile, filters: SaleFilters) {
   const { data } = await query;
   const sales = (data ?? []).map((sale) => maskSale(sale, seeProfit));
 
-  const phoneIds = sales.map((sale) => sale.phone_id);
+  const phoneIds = sales.map((sale) => sale.phone_id).filter((id): id is string => id !== null);
   const { data: phones } =
     phoneIds.length > 0
-      ? await supabase
-          .from("phones")
-          .select("id, brand, model, imei, condition, ram, storage")
-          .in("id", phoneIds)
+      ? await supabase.from("phones").select("id, brand, model, imei").in("id", phoneIds)
       : { data: [] };
   const phonesById = new Map((phones ?? []).map((phone) => [phone.id, phone]));
 
@@ -63,10 +61,23 @@ export async function getSales(profile: Profile, filters: SaleFilters) {
       : { data: [] };
   const invoicesBySaleId = new Map((invoices ?? []).map((inv) => [inv.sale_id, inv]));
 
+  const { data: allItems } =
+    saleIds.length > 0
+      ? await supabase
+          .from("sale_items")
+          .select("sale_id, quantity, accessories(name)")
+          .in("sale_id", saleIds)
+      : { data: [] };
+  const itemCountBySaleId = new Map<string, number>();
+  for (const item of allItems ?? []) {
+    itemCountBySaleId.set(item.sale_id, (itemCountBySaleId.get(item.sale_id) ?? 0) + item.quantity);
+  }
+
   return sales.map((sale) => ({
     sale,
-    phone: phonesById.get(sale.phone_id) ?? null,
+    phone: sale.phone_id ? (phonesById.get(sale.phone_id) ?? null) : null,
     client: clientsById.get(sale.client_id) ?? null,
     invoice: invoicesBySaleId.get(sale.id) ?? null,
+    accessoryItemCount: itemCountBySaleId.get(sale.id) ?? 0,
   }));
 }

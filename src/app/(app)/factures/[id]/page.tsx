@@ -55,20 +55,29 @@ export default async function InvoiceDetailPage({
             {data.client.phone ? <p className="text-sm text-muted">{data.client.phone}</p> : null}
             {data.client.email ? <p className="text-sm text-muted">{data.client.email}</p> : null}
           </div>
-          <div>
-            <p className="mb-1 text-xs font-bold uppercase text-muted">Téléphone</p>
-            <p className="text-sm font-semibold">
-              {data.phone.brand} {data.phone.model} — {data.phone.condition}
-            </p>
-            <p className="text-sm text-muted">IMEI : {data.phone.imei}</p>
-            <p className="text-sm text-muted">
-              {[data.phone.ram, data.phone.storage, data.phone.color].filter(Boolean).join(" · ")}
-            </p>
-          </div>
+          {data.phone ? (
+            <div>
+              <p className="mb-1 text-xs font-bold uppercase text-muted">Téléphone</p>
+              <p className="text-sm font-semibold">
+                {data.phone.brand} {data.phone.model} — {data.phone.condition}
+              </p>
+              <p className="text-sm text-muted">IMEI : {data.phone.imei}</p>
+              <p className="text-sm text-muted">
+                {[data.phone.ram, data.phone.storage, data.phone.color].filter(Boolean).join(" · ")}
+              </p>
+            </div>
+          ) : null}
         </div>
 
         <div className="border-t border-border pt-4">
-          <Row label="Prix de vente" value={data.sale.salePriceLabel} />
+          {data.phone ? <Row label="Téléphone" value={data.phone.priceLabel} /> : null}
+          {data.accessoryLines.map((line, index) => (
+            <Row
+              key={index}
+              label={`${line.name} × ${line.quantity}`}
+              value={line.lineTotalLabel}
+            />
+          ))}
           <Row label="Remise" value={data.sale.discountLabel} />
           <div className="mt-2 flex items-center justify-between border-t border-foreground pt-3">
             <span className="font-display text-base font-bold">Total</span>

@@ -1,4 +1,5 @@
 import type {
+  AccessoryCategory,
   PaymentMethod,
   PaymentStatus,
   PhoneCondition,
@@ -46,6 +47,17 @@ export const PAYMENT_STATUS_TONE: Record<
   paye: "success",
   partiel: "warning",
   en_attente: "danger",
+};
+
+export const ACCESSORY_CATEGORY_LABELS: Record<AccessoryCategory, string> = {
+  chargeur: "Chargeur",
+  ecran: "Écran",
+  batterie: "Batterie",
+  ecouteurs: "Écouteurs",
+  airpods: "AirPods",
+  coque: "Coque",
+  cable: "Câble",
+  autre: "Autre",
 };
 
 export const COMMON_BRANDS = [

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AlertTriangle } from "lucide-react";
 import { requireProfile } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { PageHeader } from "@/components/ui/page-header";
@@ -55,6 +56,24 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         <PeriodFilter current={period.key as PeriodKey} />
       </div>
 
+      {data.lowStockAccessories.length > 0 ? (
+        <Card className="mb-6 border-warning/40">
+          <CardContent className="flex flex-wrap items-center gap-3 p-4">
+            <AlertTriangle className="h-5 w-5 shrink-0 text-warning" />
+            <p className="text-sm font-semibold">Stock d&apos;accessoires faible :</p>
+            <div className="flex flex-wrap gap-2">
+              {data.lowStockAccessories.map((a) => (
+                <Link key={a.id} href={`/accessoires/${a.id}`}>
+                  <Badge tone="warning">
+                    {a.name} — {a.quantity_in_stock} restant(s)
+                  </Badge>
+                </Link>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      ) : null}
+
       <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
         <StatTile label="CA du jour" value={formatFCFA(data.revenue.today)} />
         <StatTile label="CA du mois" value={formatFCFA(data.revenue.month)} />
@@ -70,10 +89,41 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
         <StatTile label="Vendus (période)" value={String(data.stock.soldInPeriodCount)} />
         <StatTile label="Neufs" value={String(data.stock.newCount)} />
         <StatTile label="Quasi neufs" value={String(data.stock.likeNewCount)} />
+        <StatTile label="Unités accessoires en stock" value={String(data.stock.accessoryUnitsInStock)} />
         {data.stock.value !== null ? (
-          <StatTile label="Valeur du stock" value={formatFCFA(data.stock.value)} />
+          <StatTile label="Valeur du stock (tél. + access.)" value={formatFCFA(data.stock.value)} />
         ) : null}
       </div>
+
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle>Téléphones vs Accessoires (ce mois)</CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-4 sm:grid-cols-2">
+          <div className="rounded-md border border-border p-4">
+            <p className="text-xs font-bold uppercase text-muted">Téléphones</p>
+            <p className="tabular mt-1 font-display text-lg font-bold">
+              {formatFCFA(data.breakdown.phoneRevenueMonth)}
+            </p>
+            {data.breakdown.phoneProfitMonth !== null ? (
+              <p className="tabular mt-1 text-sm font-semibold text-brass">
+                Bénéfice : {formatFCFA(data.breakdown.phoneProfitMonth)}
+              </p>
+            ) : null}
+          </div>
+          <div className="rounded-md border border-border p-4">
+            <p className="text-xs font-bold uppercase text-muted">Accessoires</p>
+            <p className="tabular mt-1 font-display text-lg font-bold">
+              {formatFCFA(data.breakdown.accessoryRevenueMonth)}
+            </p>
+            {data.breakdown.accessoryProfitMonth !== null ? (
+              <p className="tabular mt-1 text-sm font-semibold text-brass">
+                Bénéfice : {formatFCFA(data.breakdown.accessoryProfitMonth)}
+              </p>
+            ) : null}
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="mb-6 grid gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-2">
@@ -124,7 +174,11 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
               <div key={sale.id} className="flex items-center justify-between gap-4 px-5 py-3">
                 <div>
                   <p className="text-sm font-semibold">
-                    {sale.phone ? `${sale.phone.brand} ${sale.phone.model}` : "—"}
+                    {sale.phone
+                      ? `${sale.phone.brand} ${sale.phone.model}`
+                      : sale.accessories_total > 0
+                        ? "Accessoires"
+                        : "—"}
                   </p>
                   <p className="text-xs text-muted">
                     {sale.client ? `${sale.client.first_name} ${sale.client.last_name}` : "—"}
@@ -135,7 +189,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
                     {PAYMENT_STATUS_LABELS[sale.payment_status]}
                   </Badge>
                   <span className="tabular text-sm font-semibold">
-                    {formatFCFA(sale.sale_price - sale.discount)}
+                    {formatFCFA(sale.sale_price + sale.accessories_total - sale.discount)}
                   </span>
                   {sale.invoice ? (
                     <Link
