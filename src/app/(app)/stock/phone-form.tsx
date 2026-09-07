@@ -18,8 +18,8 @@ interface SupplierOption {
 
 /**
  * Tous les champs texte/select sont volontairement contrôlés (useState),
- * jamais en `defaultValue` seul : après un échec de soumission (IMEI en
- * double, champ manquant…), React 19 réinitialise les champs non
+ * jamais en `defaultValue` seul : après un échec de soumission (champ
+ * manquant, IMEI déjà utilisé…), React 19 réinitialise les champs non
  * contrôlés d'un `<form action>` — l'utilisateur perdait sa saisie et
  * devait tout retaper (retour utilisateur du 2026-09-04). Un champ
  * contrôlé garde sa valeur quoi qu'il arrive à l'action.
@@ -49,7 +49,7 @@ export function PhoneForm({
   const [brand, setBrand] = useState(phone?.brand ?? "");
   const [model, setModel] = useState(phone?.model ?? "");
   const [imei, setImei] = useState(phone?.imei ?? "");
-  const [imeis, setImeis] = useState<string[]>([""]);
+  const [quantity, setQuantity] = useState("1");
   const [condition, setCondition] = useState(phone?.condition ?? "");
   const [ram, setRam] = useState(phone?.ram ?? "");
   const [storage, setStorage] = useState(phone?.storage ?? "");
@@ -76,31 +76,8 @@ export function PhoneForm({
     return s - p - f;
   }, [purchasePrice, extraFees, salePrice]);
 
-  const unitCount = imeis.filter((value) => value.trim().length > 0).length;
-
-  const duplicateImeis = useMemo(() => {
-    const seen = new Set<string>();
-    const duplicates = new Set<number>();
-    imeis.forEach((value, index) => {
-      const key = value.trim().toLowerCase();
-      if (!key) return;
-      if (seen.has(key)) duplicates.add(index);
-      seen.add(key);
-    });
-    return duplicates;
-  }, [imeis]);
-
-  function updateImeiAt(index: number, value: string) {
-    setImeis((current) => current.map((item, i) => (i === index ? value : item)));
-  }
-
-  function addImeiRow() {
-    setImeis((current) => [...current, ""]);
-  }
-
-  function removeImeiRow(index: number) {
-    setImeis((current) => current.filter((_, i) => i !== index));
-  }
+  const quantityNumber = Number(quantity);
+  const quantityValid = Number.isInteger(quantityNumber) && quantityNumber >= 1;
 
   return (
     <form action={formAction} className="flex flex-col gap-6">
@@ -134,64 +111,24 @@ export function PhoneForm({
             onChange={(event) => setModel(event.target.value)}
           />
           {isCreate ? (
-            <div className="flex flex-col gap-1.5 sm:col-span-2">
-              <label className="text-sm font-semibold">
-                IMEI / Numéro de série
-                <span className="text-danger"> *</span>
-              </label>
-              <p className="text-xs text-muted">
-                Un numéro par appareil. Ajoutez-en plusieurs pour enregistrer
-                d&apos;un coup plusieurs unités identiques (même marque,
-                stockage, prix…).
-              </p>
-              <div className="flex flex-col gap-2">
-                {imeis.map((value, index) => (
-                  <div key={index} className="flex items-start gap-2">
-                    <div className="flex-1">
-                      <Input
-                        name="imei"
-                        required={index === 0}
-                        placeholder={`Appareil ${index + 1}`}
-                        value={value}
-                        onChange={(event) => updateImeiAt(index, event.target.value)}
-                        error={
-                          duplicateImeis.has(index)
-                            ? "Déjà saisi ci-dessus."
-                            : undefined
-                        }
-                      />
-                    </div>
-                    {imeis.length > 1 ? (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        className="mt-0.5"
-                        onClick={() => removeImeiRow(index)}
-                      >
-                        Retirer
-                      </Button>
-                    ) : null}
-                  </div>
-                ))}
-              </div>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="self-start"
-                onClick={addImeiRow}
-              >
-                + Ajouter un appareil
-              </Button>
-            </div>
+            <Input
+              label="Quantité"
+              name="quantity"
+              type="number"
+              min={1}
+              max={500}
+              required
+              value={quantity}
+              onChange={(event) => setQuantity(event.target.value)}
+              hint="Nombre d'unités identiques à enregistrer d'un coup (même marque, stockage, prix…). L'IMEI de chaque unité pourra être ajouté plus tard depuis sa fiche."
+            />
           ) : (
             <Input
               label="IMEI / Numéro de série"
               name="imei"
-              required
               value={imei}
               onChange={(event) => setImei(event.target.value)}
+              hint="Facultatif — à renseigner quand vous l'avez sous la main."
               error={state.error?.startsWith("Cet IMEI") ? state.error : undefined}
             />
           )}
@@ -347,13 +284,13 @@ export function PhoneForm({
       <Button
         type="submit"
         size="lg"
-        disabled={pending || (isCreate && unitCount === 0)}
+        disabled={pending || (isCreate && !quantityValid)}
         className="self-start"
       >
         {pending
           ? "Enregistrement…"
-          : isCreate && unitCount > 1
-            ? `ENREGISTRER ${unitCount} TÉLÉPHONES`
+          : isCreate && quantityNumber > 1
+            ? `ENREGISTRER ${quantityNumber} TÉLÉPHONES`
             : "ENREGISTRER LE TÉLÉPHONE"}
       </Button>
 

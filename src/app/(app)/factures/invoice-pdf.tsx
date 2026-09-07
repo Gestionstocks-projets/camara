@@ -60,7 +60,9 @@ export function InvoicePdf({ data }: { data: InvoiceData }) {
             <Text>
               {data.phone.brand} {data.phone.model} — {data.phone.condition}
             </Text>
-            <Text style={styles.muted}>IMEI : {data.phone.imei}</Text>
+            {data.phone.imei ? (
+              <Text style={styles.muted}>IMEI : {data.phone.imei}</Text>
+            ) : null}
             <Text style={styles.muted}>
               {[data.phone.ram, data.phone.storage, data.phone.color].filter(Boolean).join(" · ")}
             </Text>

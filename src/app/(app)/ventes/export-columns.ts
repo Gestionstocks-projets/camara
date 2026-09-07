@@ -9,7 +9,7 @@ import type { SaleMasked, PhoneCondition } from "@/types";
 
 export interface SaleExportRow {
   sale: SaleMasked;
-  phone: { brand: string; model: string; imei: string; condition?: PhoneCondition; ram?: string | null; storage?: string } | null;
+  phone: { brand: string; model: string; imei: string | null; condition?: PhoneCondition; ram?: string | null; storage?: string } | null;
   client: { first_name: string; last_name: string } | null;
   accessoryItemCount: number;
 }

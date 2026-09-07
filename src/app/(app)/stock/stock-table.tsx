@@ -69,7 +69,7 @@ function GroupRow({ group }: { group: PhoneGroup }) {
         </div>
       </TableCell>
       <TableCell>
-        {isSingle && unit ? unit.imei : <span className="text-muted">{count} appareils</span>}
+        {isSingle && unit ? (unit.imei ?? "—") : <span className="text-muted">{count} appareils</span>}
       </TableCell>
       <TableCell>{PHONE_CONDITION_LABELS[group.condition]}</TableCell>
       <TableCell>
@@ -106,7 +106,7 @@ function GroupRow({ group }: { group: PhoneGroup }) {
                   {group.brand} {group.model}
                 </Link>
               </TableCell>
-              <TableCell>{phoneUnit.imei}</TableCell>
+              <TableCell>{phoneUnit.imei ?? "—"}</TableCell>
               <TableCell>{PHONE_CONDITION_LABELS[phoneUnit.condition]}</TableCell>
               <TableCell>
                 <Badge tone={PHONE_STATUS_TONE[phoneUnit.status]}>

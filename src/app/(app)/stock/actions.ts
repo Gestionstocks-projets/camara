@@ -2,14 +2,13 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
 import {
-  imeiSchema,
   phoneBatchSharedSchema,
   phoneSchema,
   phoneUpdateWithoutPurchaseSchema,
+  quantitySchema,
 } from "./schema";
 
 export interface PhoneFormState {
@@ -34,39 +33,6 @@ function readSharedInput(formData: FormData) {
   });
 }
 
-/**
- * Un même envoi peut contenir plusieurs IMEI (champ répété `name="imei"`)
- * pour enregistrer d'un coup plusieurs unités identiques (prompt 15).
- * Retourne la liste nettoyée (sans doublon, sans entrée vide) ou une
- * erreur explicite — jamais le message brut de zod.
- */
-function readImeis(formData: FormData): { imeis: string[] } | { error: string } {
-  const raw = formData
-    .getAll("imei")
-    .map((value) => String(value).trim())
-    .filter((value) => value.length > 0);
-
-  if (raw.length === 0) {
-    return { error: "Ajoutez au moins un IMEI / numéro de série." };
-  }
-
-  const parsed = z.array(imeiSchema).safeParse(raw);
-  if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "IMEI / numéro de série invalide." };
-  }
-
-  const seen = new Map<string, string>();
-  for (const imei of parsed.data) {
-    const key = imei.toLowerCase();
-    if (seen.has(key)) {
-      return { error: `IMEI en double dans la saisie : « ${imei} ».` };
-    }
-    seen.set(key, imei);
-  }
-
-  return { imeis: [...seen.values()] };
-}
-
 export async function createPhone(
   _prevState: PhoneFormState,
   formData: FormData,
@@ -78,41 +44,27 @@ export async function createPhone(
     return { error: shared.error.issues[0]?.message ?? "Formulaire invalide." };
   }
 
-  const imeisResult = readImeis(formData);
-  if ("error" in imeisResult) {
-    return { error: imeisResult.error };
-  }
-  const { imeis } = imeisResult;
-
-  const supabase = await createClient();
-
-  const { data: existing } = await supabase
-    .from("phones")
-    .select("imei")
-    .in("imei", imeis);
-
-  if (existing && existing.length > 0) {
-    const list = existing.map((row) => row.imei).join(", ");
+  const quantityParsed = quantitySchema.safeParse(formData.get("quantity"));
+  if (!quantityParsed.success) {
     return {
-      error:
-        existing.length === 1
-          ? `Cet IMEI existe déjà : ${list}.`
-          : `Ces IMEI existent déjà : ${list}.`,
+      error: quantityParsed.error.issues[0]?.message ?? "Quantité invalide.",
     };
   }
 
-  const rows = imeis.map((imei) => ({
+  const supabase = await createClient();
+
+  // L'IMEI n'est pas demandé à la création (prompt 16) — chaque unité du
+  // lot est créée sans, à renseigner plus tard depuis sa fiche si besoin ;
+  // plusieurs IMEI NULL coexistent sans conflit sous la contrainte unique.
+  const rows = Array.from({ length: quantityParsed.data }, () => ({
     ...shared.data,
-    imei,
+    imei: null,
     created_by: profile.id,
   }));
 
   const { data, error } = await supabase.from("phones").insert(rows).select("id");
 
   if (error) {
-    if (error.code === "23505") {
-      return { error: "Cet IMEI existe déjà." };
-    }
     return { error: "Impossible d'enregistrer le(s) téléphone(s)." };
   }
 

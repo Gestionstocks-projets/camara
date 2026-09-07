@@ -37,7 +37,13 @@ export const phoneSchema = z.object({
     .trim()
     .min(1, "Le modèle est obligatoire.")
     .max(80, "Le modèle ne doit pas dépasser 80 caractères."),
-  imei: imeiSchema,
+  /** Optionnel (prompt 16) : la boutique n'a pas toujours le numéro sous
+   * la main à la réception, surtout pour un lot de plusieurs unités
+   * identiques — il peut être ajouté plus tard depuis la fiche. */
+  imei: imeiSchema
+    .optional()
+    .or(z.literal(""))
+    .transform((value) => (value ? value : null)),
   condition: z.enum(["neuf", "quasi_neuf"], {
     error: "L'état est obligatoire.",
   }),
@@ -92,8 +98,15 @@ export const phoneUpdateWithoutPurchaseSchema = phoneSchema.omit({
 });
 
 /**
- * Champs communs à un lot d'appareils identiques (prompt 15) : mêmes
- * informations que `phoneSchema` mais sans IMEI — chaque unité du lot a le
- * sien, validé séparément via `imeiSchema`.
+ * Champs d'un lot d'appareils identiques (prompt 15) : la création ne
+ * demande plus l'IMEI (prompt 16, pas nécessaire pour enregistrer vite un
+ * arrivage) — juste les infos communes, dupliquées sur `quantity` lignes.
+ * L'IMEI de chaque unité pourra être renseigné plus tard depuis sa fiche.
  */
 export const phoneBatchSharedSchema = phoneSchema.omit({ imei: true });
+
+export const quantitySchema = z.coerce
+  .number({ error: "La quantité est obligatoire." })
+  .int("La quantité doit être un nombre entier.")
+  .min(1, "La quantité doit être d'au moins 1.")
+  .max(500, "La quantité ne doit pas dépasser 500 à la fois.");

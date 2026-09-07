@@ -190,7 +190,7 @@ export type Database = {
           email: string | null
           extra_fees: number
           id: string
-          imei: string
+          imei: string | null
           model: string
           photo_url: string | null
           planned_sale_price: number
@@ -211,7 +211,7 @@ export type Database = {
           email?: string | null
           extra_fees?: number
           id?: string
-          imei: string
+          imei?: string | null
           model: string
           photo_url?: string | null
           planned_sale_price: number
@@ -232,7 +232,7 @@ export type Database = {
           email?: string | null
           extra_fees?: number
           id?: string
-          imei?: string
+          imei?: string | null
           model?: string
           photo_url?: string | null
           planned_sale_price?: number

@@ -36,6 +36,7 @@ Code, à exécuter dans l'ordre. Chacun suppose les précédents terminés.
 | 13 | `13-exports.md` | Export Excel/PDF sur tous les modules |
 | 14 | `14-qualite-et-deploiement.md` | Robustesse, recette, mise en production |
 | 15 | `15-stock-lot-et-corrections.md` | Enregistrement de téléphones par lot, stockage 8/16/32 Go, messages d'erreur en français |
+| 16 | `16-imei-optionnel.md` | IMEI optionnel à la création, remplacé par un champ Quantité |
 
 ## Décisions déjà tranchées (ne pas rouvrir sans validation du client)
 

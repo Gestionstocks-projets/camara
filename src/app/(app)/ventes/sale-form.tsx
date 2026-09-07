@@ -15,7 +15,7 @@ interface PhoneOption {
   id: string;
   brand: string;
   model: string;
-  imei: string;
+  imei: string | null;
   planned_sale_price: number;
 }
 
@@ -152,7 +152,8 @@ export function SaleForm({
             <option value="">Aucun (accessoires seuls)</option>
             {phones.map((phone) => (
               <option key={phone.id} value={phone.id}>
-                {phone.brand} {phone.model} · {phone.imei}
+                {phone.brand} {phone.model}
+                {phone.imei ? ` · ${phone.imei}` : ""}
               </option>
             ))}
           </Select>

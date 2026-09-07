@@ -41,7 +41,7 @@ export default async function PhoneDetailPage({
     <div className="mx-auto max-w-3xl">
       <PageHeader
         title={`${phone.brand} ${phone.model}`}
-        description={phone.imei}
+        description={phone.imei ?? undefined}
         actions={
           <>
             <Link

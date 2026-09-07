@@ -81,7 +81,7 @@ export async function globalSearch(
     phones: (phonesRes.data ?? []).map((phone) => ({
       id: phone.id,
       title: `${phone.brand} ${phone.model}`,
-      subtitle: phone.imei,
+      subtitle: phone.imei ?? undefined,
       href: `/stock/${phone.id}`,
     })),
     accessories: (accessoriesRes.data ?? []).map((accessory) => ({

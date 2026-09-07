@@ -112,7 +112,7 @@ export default async function SupplierDetailPage({
                     {phone.brand} {phone.model}
                   </Link>
                 </TableCell>
-                <TableCell>{phone.imei}</TableCell>
+                <TableCell>{phone.imei ?? "—"}</TableCell>
                 <TableCell>
                   <Badge tone={PHONE_STATUS_TONE[phone.status]}>
                     {PHONE_STATUS_LABELS[phone.status]}

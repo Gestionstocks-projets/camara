@@ -61,7 +61,9 @@ export default async function InvoiceDetailPage({
               <p className="text-sm font-semibold">
                 {data.phone.brand} {data.phone.model} — {data.phone.condition}
               </p>
-              <p className="text-sm text-muted">IMEI : {data.phone.imei}</p>
+              {data.phone.imei ? (
+                <p className="text-sm text-muted">IMEI : {data.phone.imei}</p>
+              ) : null}
               <p className="text-sm text-muted">
                 {[data.phone.ram, data.phone.storage, data.phone.color].filter(Boolean).join(" · ")}
               </p>

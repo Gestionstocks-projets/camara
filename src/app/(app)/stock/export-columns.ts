@@ -10,7 +10,7 @@ export function buildStockColumns(
   const columns: ExportColumn<PhoneMasked>[] = [
     { key: "brand", label: "Marque", value: (p) => p.brand },
     { key: "model", label: "Modèle", value: (p) => p.model },
-    { key: "imei", label: "IMEI", value: (p) => p.imei },
+    { key: "imei", label: "IMEI", value: (p) => p.imei ?? "" },
     { key: "condition", label: "État", value: (p) => PHONE_CONDITION_LABELS[p.condition] },
     { key: "status", label: "Statut", value: (p) => PHONE_STATUS_LABELS[p.status] },
     { key: "ram", label: "RAM", value: (p) => p.ram ?? "" },
