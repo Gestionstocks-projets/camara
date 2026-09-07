@@ -79,6 +79,9 @@ export const RAM_OPTIONS = [
   "128 Go",
 ] as const;
 export const STORAGE_OPTIONS = [
+  "8 Go",
+  "16 Go",
+  "32 Go",
   "64 Go",
   "128 Go",
   "256 Go",

@@ -44,9 +44,12 @@ export function PhoneForm({
   const [options, setOptions] = useState(supplierOptions);
   const [quickCreateOpen, setQuickCreateOpen] = useState(false);
 
+  const isCreate = !phone;
+
   const [brand, setBrand] = useState(phone?.brand ?? "");
   const [model, setModel] = useState(phone?.model ?? "");
   const [imei, setImei] = useState(phone?.imei ?? "");
+  const [imeis, setImeis] = useState<string[]>([""]);
   const [condition, setCondition] = useState(phone?.condition ?? "");
   const [ram, setRam] = useState(phone?.ram ?? "");
   const [storage, setStorage] = useState(phone?.storage ?? "");
@@ -72,6 +75,32 @@ export function PhoneForm({
     const s = Number(salePrice) || 0;
     return s - p - f;
   }, [purchasePrice, extraFees, salePrice]);
+
+  const unitCount = imeis.filter((value) => value.trim().length > 0).length;
+
+  const duplicateImeis = useMemo(() => {
+    const seen = new Set<string>();
+    const duplicates = new Set<number>();
+    imeis.forEach((value, index) => {
+      const key = value.trim().toLowerCase();
+      if (!key) return;
+      if (seen.has(key)) duplicates.add(index);
+      seen.add(key);
+    });
+    return duplicates;
+  }, [imeis]);
+
+  function updateImeiAt(index: number, value: string) {
+    setImeis((current) => current.map((item, i) => (i === index ? value : item)));
+  }
+
+  function addImeiRow() {
+    setImeis((current) => [...current, ""]);
+  }
+
+  function removeImeiRow(index: number) {
+    setImeis((current) => current.filter((_, i) => i !== index));
+  }
 
   return (
     <form action={formAction} className="flex flex-col gap-6">
@@ -104,14 +133,68 @@ export function PhoneForm({
             value={model}
             onChange={(event) => setModel(event.target.value)}
           />
-          <Input
-            label="IMEI"
-            name="imei"
-            required
-            value={imei}
-            onChange={(event) => setImei(event.target.value)}
-            error={state.error?.startsWith("Cet IMEI") ? state.error : undefined}
-          />
+          {isCreate ? (
+            <div className="flex flex-col gap-1.5 sm:col-span-2">
+              <label className="text-sm font-semibold">
+                IMEI / Numéro de série
+                <span className="text-danger"> *</span>
+              </label>
+              <p className="text-xs text-muted">
+                Un numéro par appareil. Ajoutez-en plusieurs pour enregistrer
+                d&apos;un coup plusieurs unités identiques (même marque,
+                stockage, prix…).
+              </p>
+              <div className="flex flex-col gap-2">
+                {imeis.map((value, index) => (
+                  <div key={index} className="flex items-start gap-2">
+                    <div className="flex-1">
+                      <Input
+                        name="imei"
+                        required={index === 0}
+                        placeholder={`Appareil ${index + 1}`}
+                        value={value}
+                        onChange={(event) => updateImeiAt(index, event.target.value)}
+                        error={
+                          duplicateImeis.has(index)
+                            ? "Déjà saisi ci-dessus."
+                            : undefined
+                        }
+                      />
+                    </div>
+                    {imeis.length > 1 ? (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="mt-0.5"
+                        onClick={() => removeImeiRow(index)}
+                      >
+                        Retirer
+                      </Button>
+                    ) : null}
+                  </div>
+                ))}
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="self-start"
+                onClick={addImeiRow}
+              >
+                + Ajouter un appareil
+              </Button>
+            </div>
+          ) : (
+            <Input
+              label="IMEI / Numéro de série"
+              name="imei"
+              required
+              value={imei}
+              onChange={(event) => setImei(event.target.value)}
+              error={state.error?.startsWith("Cet IMEI") ? state.error : undefined}
+            />
+          )}
           <Select
             label="État"
             name="condition"
@@ -257,12 +340,21 @@ export function PhoneForm({
         </CardContent>
       </Card>
 
-      {state.error && !state.error.startsWith("Cet IMEI") ? (
+      {state.error && !(!isCreate && state.error.startsWith("Cet IMEI")) ? (
         <p className="text-sm font-medium text-danger">{state.error}</p>
       ) : null}
 
-      <Button type="submit" size="lg" disabled={pending} className="self-start">
-        {pending ? "Enregistrement…" : "ENREGISTRER LE TÉLÉPHONE"}
+      <Button
+        type="submit"
+        size="lg"
+        disabled={pending || (isCreate && unitCount === 0)}
+        className="self-start"
+      >
+        {pending
+          ? "Enregistrement…"
+          : isCreate && unitCount > 1
+            ? `ENREGISTRER ${unitCount} TÉLÉPHONES`
+            : "ENREGISTRER LE TÉLÉPHONE"}
       </Button>
 
       {isOwner ? (

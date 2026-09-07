@@ -35,6 +35,7 @@ Code, à exécuter dans l'ordre. Chacun suppose les précédents terminés.
 | 12 | `12-gerants-parametres.md` | Gestion des comptes gérants, réglages |
 | 13 | `13-exports.md` | Export Excel/PDF sur tous les modules |
 | 14 | `14-qualite-et-deploiement.md` | Robustesse, recette, mise en production |
+| 15 | `15-stock-lot-et-corrections.md` | Enregistrement de téléphones par lot, stockage 8/16/32 Go, messages d'erreur en français |
 
 ## Décisions déjà tranchées (ne pas rouvrir sans validation du client)
 
@@ -42,4 +43,6 @@ Code, à exécuter dans l'ordre. Chacun suppose les précédents terminés.
 - Vente à crédit prévue dès le départ (statut payé/partiel/en attente).
 - Authentification email + mot de passe (pas d'OTP téléphone).
 - Palette "Teranga" (indigo + laiton) validée.
-- Champ "Quantité" retiré de la fiche téléphone (1 ligne = 1 IMEI).
+- Champ "Quantité" retiré de la fiche téléphone (1 ligne = 1 IMEI) — **révisé
+  au prompt 15** : la base garde 1 ligne par IMEI, mais la création accepte
+  désormais plusieurs IMEI en une soumission pour un lot d'unités identiques.

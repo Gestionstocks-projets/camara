@@ -2,53 +2,24 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { requireProfile } from "@/lib/auth";
-import { phoneSchema, phoneUpdateWithoutPurchaseSchema } from "./schema";
-
-export interface PhoneFormValues {
-  brand?: string;
-  model?: string;
-  imei?: string;
-  condition?: string;
-  ram?: string;
-  storage?: string;
-  color?: string;
-  email?: string;
-  supplier_id?: string;
-  photo_url?: string;
-  arrival_date?: string;
-}
+import {
+  imeiSchema,
+  phoneBatchSharedSchema,
+  phoneSchema,
+  phoneUpdateWithoutPurchaseSchema,
+} from "./schema";
 
 export interface PhoneFormState {
   error?: string;
-  /** Valeurs telles que saisies, renvoyées avec l'erreur pour que le
-   * formulaire ne se vide pas (React 19 réinitialise les champs non
-   * contrôlés après l'action) — cf. retour utilisateur du 2026-09-04. */
-  values?: PhoneFormValues;
 }
 
-function formValues(formData: FormData): PhoneFormValues {
-  return {
-    brand: String(formData.get("brand") ?? ""),
-    model: String(formData.get("model") ?? ""),
-    imei: String(formData.get("imei") ?? ""),
-    condition: String(formData.get("condition") ?? ""),
-    ram: String(formData.get("ram") ?? ""),
-    storage: String(formData.get("storage") ?? ""),
-    color: String(formData.get("color") ?? ""),
-    email: String(formData.get("email") ?? ""),
-    supplier_id: String(formData.get("supplier_id") ?? ""),
-    photo_url: String(formData.get("photo_url") ?? ""),
-    arrival_date: String(formData.get("arrival_date") ?? ""),
-  };
-}
-
-function readInput(formData: FormData) {
-  return phoneSchema.safeParse({
+function readSharedInput(formData: FormData) {
+  return phoneBatchSharedSchema.safeParse({
     brand: formData.get("brand"),
     model: formData.get("model"),
-    imei: formData.get("imei"),
     condition: formData.get("condition"),
     ram: formData.get("ram") || undefined,
     storage: formData.get("storage"),
@@ -63,36 +34,94 @@ function readInput(formData: FormData) {
   });
 }
 
+/**
+ * Un même envoi peut contenir plusieurs IMEI (champ répété `name="imei"`)
+ * pour enregistrer d'un coup plusieurs unités identiques (prompt 15).
+ * Retourne la liste nettoyée (sans doublon, sans entrée vide) ou une
+ * erreur explicite — jamais le message brut de zod.
+ */
+function readImeis(formData: FormData): { imeis: string[] } | { error: string } {
+  const raw = formData
+    .getAll("imei")
+    .map((value) => String(value).trim())
+    .filter((value) => value.length > 0);
+
+  if (raw.length === 0) {
+    return { error: "Ajoutez au moins un IMEI / numéro de série." };
+  }
+
+  const parsed = z.array(imeiSchema).safeParse(raw);
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "IMEI / numéro de série invalide." };
+  }
+
+  const seen = new Map<string, string>();
+  for (const imei of parsed.data) {
+    const key = imei.toLowerCase();
+    if (seen.has(key)) {
+      return { error: `IMEI en double dans la saisie : « ${imei} ».` };
+    }
+    seen.set(key, imei);
+  }
+
+  return { imeis: [...seen.values()] };
+}
+
 export async function createPhone(
   _prevState: PhoneFormState,
   formData: FormData,
 ): Promise<PhoneFormState> {
   const profile = await requireProfile();
-  const parsed = readInput(formData);
-  if (!parsed.success) {
+
+  const shared = readSharedInput(formData);
+  if (!shared.success) {
+    return { error: shared.error.issues[0]?.message ?? "Formulaire invalide." };
+  }
+
+  const imeisResult = readImeis(formData);
+  if ("error" in imeisResult) {
+    return { error: imeisResult.error };
+  }
+  const { imeis } = imeisResult;
+
+  const supabase = await createClient();
+
+  const { data: existing } = await supabase
+    .from("phones")
+    .select("imei")
+    .in("imei", imeis);
+
+  if (existing && existing.length > 0) {
+    const list = existing.map((row) => row.imei).join(", ");
     return {
-      error: parsed.error.issues[0]?.message ?? "Formulaire invalide.",
-      values: formValues(formData),
+      error:
+        existing.length === 1
+          ? `Cet IMEI existe déjà : ${list}.`
+          : `Ces IMEI existent déjà : ${list}.`,
     };
   }
 
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("phones")
-    .insert({ ...parsed.data, created_by: profile.id })
-    .select("id")
-    .single();
+  const rows = imeis.map((imei) => ({
+    ...shared.data,
+    imei,
+    created_by: profile.id,
+  }));
+
+  const { data, error } = await supabase.from("phones").insert(rows).select("id");
 
   if (error) {
-    const values = formValues(formData);
     if (error.code === "23505") {
-      return { error: "Cet IMEI existe déjà.", values };
+      return { error: "Cet IMEI existe déjà." };
     }
-    return { error: "Impossible d'enregistrer le téléphone.", values };
+    return { error: "Impossible d'enregistrer le(s) téléphone(s)." };
   }
 
   revalidatePath("/stock");
-  redirect(`/stock/${data.id}`);
+  const first = data[0];
+  if (data.length === 1 && first) {
+    redirect(`/stock/${first.id}`);
+  }
+  redirect(`/stock?added=${data.length}`);
 }
 
 function readUpdateInput(formData: FormData) {
@@ -132,21 +161,17 @@ export async function updatePhone(
   await requireProfile();
   const parsed = readUpdateInput(formData);
   if (!parsed.success) {
-    return {
-      error: parsed.error.issues[0]?.message ?? "Formulaire invalide.",
-      values: formValues(formData),
-    };
+    return { error: parsed.error.issues[0]?.message ?? "Formulaire invalide." };
   }
 
   const supabase = await createClient();
   const { error } = await supabase.from("phones").update(parsed.data).eq("id", id);
 
   if (error) {
-    const values = formValues(formData);
     if (error.code === "23505") {
-      return { error: "Cet IMEI existe déjà.", values };
+      return { error: "Cet IMEI existe déjà." };
     }
-    return { error: "Impossible de modifier le téléphone.", values };
+    return { error: "Impossible de modifier le téléphone." };
   }
 
   revalidatePath("/stock");
