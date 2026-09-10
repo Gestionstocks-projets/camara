@@ -54,14 +54,6 @@ export const phoneSchema = z.object({
     .min(1, "Le stockage est obligatoire.")
     .max(20, "Le stockage ne doit pas dépasser 20 caractères."),
   color: optionalTrimmed(40, "La couleur"),
-  email: z
-    .string()
-    .trim()
-    .email("Adresse email invalide.")
-    .max(160, "L'adresse email ne doit pas dépasser 160 caractères.")
-    .optional()
-    .or(z.literal(""))
-    .transform((value) => (value ? value : null)),
   supplier_id: z
     .string()
     .uuid()

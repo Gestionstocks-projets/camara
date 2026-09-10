@@ -87,7 +87,6 @@ export default async function PhoneDetailPage({
           <Field label="RAM" value={phone.ram ?? "—"} />
           <Field label="Stockage" value={phone.storage} />
           <Field label="Couleur" value={phone.color ?? "—"} />
-          <Field label="Adresse mail" value={phone.email ?? "—"} />
           <Field label="Fournisseur" value={supplier?.name ?? "—"} />
           <Field label="Date d'arrivée" value={formatDate(phone.arrival_date)} />
         </CardContent>

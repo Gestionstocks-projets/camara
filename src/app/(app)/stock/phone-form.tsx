@@ -54,7 +54,6 @@ export function PhoneForm({
   const [ram, setRam] = useState(phone?.ram ?? "");
   const [storage, setStorage] = useState(phone?.storage ?? "");
   const [color, setColor] = useState(phone?.color ?? "");
-  const [email, setEmail] = useState(phone?.email ?? "");
   const [selectedSupplier, setSelectedSupplier] = useState(phone?.supplier_id ?? "");
   const [photoUrl, setPhotoUrl] = useState(phone?.photo_url ?? "");
   const [arrivalDate, setArrivalDate] = useState(
@@ -174,13 +173,6 @@ export function PhoneForm({
             name="color"
             value={color}
             onChange={(event) => setColor(event.target.value)}
-          />
-          <Input
-            label="Adresse mail"
-            name="email"
-            type="email"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
           />
         </CardContent>
       </Card>
