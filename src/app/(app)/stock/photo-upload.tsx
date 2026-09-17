@@ -5,6 +5,33 @@ import { ImagePlus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
 
+const MAX_FILE_SIZE = 15 * 1024 * 1024; // 15 Mo — au-delà, l'envoi est trop lent sur mobile.
+
+/**
+ * Une photo prise avec un iPhone est enregistrée en HEIC par défaut. Ce
+ * format s'envoie sans problème vers Supabase Storage, mais aucun
+ * navigateur autre que Safari ne l'affiche dans une balise `<img>` : la
+ * photo "disparaît" silencieusement pour la boutique (retour utilisateur
+ * du 2026-09-17) sans qu'aucune erreur n'apparaisse. On la convertit donc
+ * en JPEG avant l'envoi.
+ */
+function isHeic(file: File): boolean {
+  const type = file.type.toLowerCase();
+  if (type === "image/heic" || type === "image/heif") return true;
+  return /\.(heic|heif)$/i.test(file.name);
+}
+
+async function toUploadableFile(file: File): Promise<File> {
+  if (!isHeic(file)) return file;
+
+  const heic2any = (await import("heic2any")).default;
+  const converted = await heic2any({ blob: file, toType: "image/jpeg", quality: 0.85 });
+  const blob = Array.isArray(converted) ? converted[0] : converted;
+  if (!blob) throw new Error("Conversion HEIC vide.");
+  const name = file.name.replace(/\.(heic|heif)$/i, ".jpg");
+  return new File([blob], name, { type: "image/jpeg" });
+}
+
 export function PhotoUpload({
   value,
   onChange,
@@ -18,22 +45,34 @@ export function PhotoUpload({
 
   async function handleFile(file: File) {
     setError(null);
+
+    if (file.size > MAX_FILE_SIZE) {
+      setError("Photo trop lourde (15 Mo maximum) — reprenez-la en qualité normale.");
+      return;
+    }
+
     setUploading(true);
     try {
+      const uploadable = await toUploadableFile(file);
+
       const supabase = createClient();
-      const ext = file.name.split(".").pop() ?? "jpg";
+      const ext = uploadable.name.split(".").pop() ?? "jpg";
       const path = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
       const { error: uploadError } = await supabase.storage
         .from("phone-photos")
-        .upload(path, file, { contentType: file.type || "image/jpeg" });
+        .upload(path, uploadable, { contentType: uploadable.type || "image/jpeg" });
 
       if (uploadError) {
-        setError("Impossible de téléverser la photo.");
+        setError("Impossible de téléverser la photo. Vérifiez votre connexion et réessayez.");
         return;
       }
 
       const { data } = supabase.storage.from("phone-photos").getPublicUrl(path);
       onChange(data.publicUrl);
+    } catch {
+      setError(
+        "La photo n'a pas pu être traitée (format non pris en charge ou fichier corrompu).",
+      );
     } finally {
       setUploading(false);
     }
@@ -64,7 +103,7 @@ export function PhotoUpload({
         <input
           ref={inputRef}
           type="file"
-          accept="image/*"
+          accept="image/*,.heic,.heif"
           className="hidden"
           onChange={(event) => {
             const file = event.target.files?.[0];
