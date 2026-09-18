@@ -7,6 +7,10 @@ import { managerSchema } from "./schema";
 
 export interface ManagerFormState {
   error?: string;
+  /** Distinct de l'état initial (`{}`) : sans ce marqueur, un succès et
+   * "pas encore soumis" sont tous les deux `{}`, impossible à distinguer
+   * pour fermer la modale (retour utilisateur du 2026-09-18). */
+  success?: boolean;
 }
 
 export async function createManager(
@@ -54,7 +58,7 @@ export async function createManager(
   }
 
   revalidatePath("/gerants");
-  return {};
+  return { success: true };
 }
 
 export interface SimpleState {

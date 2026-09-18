@@ -8,6 +8,9 @@ import { supplierSchema } from "./schema";
 
 export interface SupplierFormState {
   error?: string;
+  /** Cf. clients/actions.ts : signale une modification réussie pour que
+   * la modale (ouverte sur la fiche elle-même) puisse se fermer. */
+  success?: boolean;
 }
 
 function readInput(formData: FormData) {
@@ -31,13 +34,21 @@ export async function createSupplier(
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.from("suppliers").insert(parsed.data);
-  if (error) {
+  const { data, error } = await supabase
+    .from("suppliers")
+    .insert(parsed.data)
+    .select("id")
+    .single();
+  if (error || !data) {
     return { error: "Impossible de créer le fournisseur." };
   }
 
+  // Redirige vers la fiche créée (et non `/fournisseurs`) : le formulaire
+  // est ouvert dans une modale sur `/fournisseurs` elle-même, donc
+  // rediriger vers la même page ne fermait jamais la modale (même bug que
+  // clients/actions.ts, retour utilisateur du 2026-09-18).
   revalidatePath("/fournisseurs");
-  redirect("/fournisseurs");
+  redirect(`/fournisseurs/${data.id}`);
 }
 
 export async function updateSupplier(
@@ -60,9 +71,11 @@ export async function updateSupplier(
     return { error: "Impossible de modifier le fournisseur." };
   }
 
+  // Pas de redirect : la modale de modification est ouverte sur la fiche
+  // elle-même — elle se ferme désormais elle-même sur `success`.
   revalidatePath("/fournisseurs");
   revalidatePath(`/fournisseurs/${id}`);
-  redirect(`/fournisseurs/${id}`);
+  return { success: true };
 }
 
 export interface DeleteState {

@@ -9,6 +9,11 @@ import type { Client } from "@/types";
 
 export interface ClientFormState {
   error?: string;
+  /** Distinct de l'absence d'erreur : signale explicitement une écriture
+   * réussie pour que le formulaire (dans une modale, cf. `EditClientButton`)
+   * puisse se fermer — un simple `!state.error` serait vrai aussi pour
+   * l'état initial, avant toute soumission. */
+  success?: boolean;
 }
 
 function readInput(formData: FormData) {
@@ -33,13 +38,22 @@ export async function createClientRecord(
   }
 
   const supabase = await createSupabaseClient();
-  const { error } = await supabase.from("clients").insert(parsed.data);
-  if (error) {
+  const { data, error } = await supabase
+    .from("clients")
+    .insert(parsed.data)
+    .select("id")
+    .single();
+  if (error || !data) {
     return { error: "Impossible de créer le client." };
   }
 
+  // Redirige vers la fiche du client (et non `/clients`) : le formulaire
+  // est ouvert dans une modale sur `/clients` elle-même, donc rediriger
+  // vers la même page ne change pas l'URL — la modale ne se refermait
+  // jamais et rien ne confirmait la création (retour utilisateur du
+  // 2026-09-18). Changer de route la démonte pour de bon.
   revalidatePath("/clients");
-  redirect("/clients");
+  redirect(`/clients/${data.id}`);
 }
 
 export async function updateClientRecord(
@@ -59,9 +73,13 @@ export async function updateClientRecord(
     return { error: "Impossible de modifier le client." };
   }
 
+  // Pas de redirect ici : contrairement à la création, la modale de
+  // modification est ouverte sur la fiche du client elle-même — rediriger
+  // vers cette même URL ne la fermait jamais (retour utilisateur du
+  // 2026-09-18). La modale se ferme désormais elle-même sur `success`.
   revalidatePath("/clients");
   revalidatePath(`/clients/${id}`);
-  redirect(`/clients/${id}`);
+  return { success: true };
 }
 
 export interface DeleteState {

@@ -19,7 +19,7 @@ export function EditSupplierButton({ supplier }: { supplier: Supplier }) {
         <Pencil className="h-4 w-4" /> Modifier
       </Button>
       <Modal open={open} onClose={() => setOpen(false)} title="Modifier le fournisseur">
-        <SupplierForm action={boundAction} supplier={supplier} />
+        <SupplierForm action={boundAction} supplier={supplier} onSuccess={() => setOpen(false)} />
       </Modal>
     </>
   );

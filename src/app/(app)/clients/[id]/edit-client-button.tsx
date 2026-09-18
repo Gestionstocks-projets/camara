@@ -19,7 +19,7 @@ export function EditClientButton({ client }: { client: Client }) {
         <Pencil className="h-4 w-4" /> Modifier
       </Button>
       <Modal open={open} onClose={() => setOpen(false)} title="Modifier le client">
-        <ClientForm action={boundAction} client={client} />
+        <ClientForm action={boundAction} client={client} onSuccess={() => setOpen(false)} />
       </Modal>
     </>
   );

@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { Input, Textarea } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
 import type { Supplier } from "@/types";
@@ -9,11 +9,19 @@ import type { SupplierFormState } from "./actions";
 export function SupplierForm({
   action,
   supplier,
+  onSuccess,
 }: {
   action: (state: SupplierFormState, formData: FormData) => Promise<SupplierFormState>;
   supplier?: Supplier;
+  /** Cf. ClientForm — ferme la modale de modification après succès. */
+  onSuccess?: () => void;
 }) {
   const [state, formAction, pending] = useActionState(action, {});
+
+  useEffect(() => {
+    if (state.success) onSuccess?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.success]);
   const [name, setName] = useState(supplier?.name ?? "");
   const [phone, setPhone] = useState(supplier?.phone ?? "");
   const [whatsapp, setWhatsapp] = useState(supplier?.whatsapp ?? "");

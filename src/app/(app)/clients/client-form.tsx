@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { Input } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
 import type { Client } from "@/types";
@@ -9,11 +9,20 @@ import type { ClientFormState } from "./actions";
 export function ClientForm({
   action,
   client,
+  onSuccess,
 }: {
   action: (state: ClientFormState, formData: FormData) => Promise<ClientFormState>;
   client?: Client;
+  /** Appelé après une écriture réussie — utilisé par `EditClientButton`
+   * pour fermer sa modale (la modification ne redirige pas, cf. actions.ts). */
+  onSuccess?: () => void;
 }) {
   const [state, formAction, pending] = useActionState(action, {});
+
+  useEffect(() => {
+    if (state.success) onSuccess?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.success]);
   const [firstName, setFirstName] = useState(client?.first_name ?? "");
   const [lastName, setLastName] = useState(client?.last_name ?? "");
   const [phone, setPhone] = useState(client?.phone ?? "");
